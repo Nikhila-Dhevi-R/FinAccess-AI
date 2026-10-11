@@ -84,7 +84,7 @@ def send_otp(db: DBSession, session: UserSession, raw_phone: str, language: str 
         .order_by(PhoneOtp.issued_at.desc())
         .first()
     )
-    if recent and not recent.consumed:
+    if recent and not recent.consumed and _aware(recent.expires_at) > now:
         age = max(0, int((now - _aware(recent.issued_at)).total_seconds()))
         if age < settings.OTP_RESEND_COOLDOWN_SECONDS:
             _reject(
