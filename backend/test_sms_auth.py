@@ -122,6 +122,20 @@ def test_missing_twilio_configuration_fails_closed_without_provider_details(monk
     assert "TWILIO_AUTH_TOKEN" not in str(error)
 
 
+def test_malformed_twilio_sids_fail_closed(monkeypatch):
+    settings = get_settings()
+    monkeypatch.setattr(settings, "TWILIO_ACCOUNT_SID", "AC-short")
+    monkeypatch.setattr(settings, "TWILIO_AUTH_TOKEN", "test-token")
+    monkeypatch.setattr(settings, "TWILIO_VERIFY_SERVICE_SID", "VA-short")
+    twilio_verify_service.set_mock_handler(None)
+
+    with pytest.raises(otp_service.OtpError) as exc_info:
+        twilio_verify_service.send_verification("+919876543210")
+
+    assert exc_info.value.code == "twilio_not_configured"
+    assert exc_info.value.status_code == 503
+
+
 def test_send_and_verify_otp_links_user_and_marks_session_verified(db_session, monkeypatch):
     settings = get_settings()
     monkeypatch.setattr(settings, "TWILIO_ACCOUNT_SID", "AC" + "1" * 32)

@@ -1,6 +1,7 @@
 """Small, fail-closed boundary around the Twilio Verify API."""
 
 from collections.abc import Callable
+import re
 
 from twilio.base.exceptions import TwilioRestException
 from twilio.rest import Client
@@ -31,10 +32,12 @@ def set_mock_handler(handler: Callable[..., object] | None) -> None:
 
 def _get_client() -> Client:
     settings = get_settings()
+    account_sid_valid = bool(re.fullmatch(r"AC[0-9a-fA-F]{32}", settings.TWILIO_ACCOUNT_SID))
+    service_sid_valid = bool(re.fullmatch(r"VA[0-9a-fA-F]{32}", settings.TWILIO_VERIFY_SERVICE_SID))
     if (
-        not settings.TWILIO_ACCOUNT_SID.startswith("AC")
+        not account_sid_valid
         or not settings.TWILIO_AUTH_TOKEN.strip()
-        or not settings.TWILIO_VERIFY_SERVICE_SID.startswith("VA")
+        or not service_sid_valid
     ):
         raise OtpError(
             "twilio_not_configured",
