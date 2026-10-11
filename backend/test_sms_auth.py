@@ -1,6 +1,9 @@
 import pytest
 
 from datetime import datetime, timedelta, timezone
+import io
+import shutil
+from pathlib import Path
 
 from config import Settings, get_settings
 from models import AuditLog, EventType, OtpChannel, PhoneOtp, UserSession
@@ -250,3 +253,65 @@ def test_api_wrong_code_and_resend_cooldown_are_recoverable(client, mock_twilio)
     assert resend.status_code == 429
     assert resend.json()["detail"]["code"] == "otp_resend_wait"
     assert resend.json()["detail"]["retry_after"] > 0
+
+
+def test_unverified_upload_is_rejected_before_file_persistence(client, monkeypatch):
+    settings = get_settings()
+    monkeypatch.setattr(settings, "MFA_REQUIRED", True)
+    upload_dir = Path("backend/uploads/sms-auth-test")
+    shutil.rmtree(upload_dir, ignore_errors=True)
+    upload_dir.mkdir(parents=True, exist_ok=True)
+    monkeypatch.setattr(settings, "UPLOAD_DIR", str(upload_dir))
+    session_id = client.post("/api/v1/sessions", json={"preferred_language": "en"}).json()["id"]
+    pdf = client.get("/api/v1/forms/demo-templates/bank_form").content
+
+    try:
+        response = client.post(
+            "/api/v1/forms/upload",
+            data={"session_id": session_id},
+            files={"file": ("bank_form.pdf", io.BytesIO(pdf), "application/pdf")},
+        )
+
+        assert response.status_code == 403
+        assert response.json()["detail"]["code"] == "form_auth_required"
+        assert list(upload_dir.iterdir()) == []
+    finally:
+        shutil.rmtree(upload_dir, ignore_errors=True)
+
+
+def test_verified_upload_keeps_randomized_field_challenge(client, monkeypatch, db_session):
+    settings = get_settings()
+    monkeypatch.setattr(settings, "MFA_REQUIRED", True)
+    upload_dir = Path("backend/uploads/sms-auth-test")
+    shutil.rmtree(upload_dir, ignore_errors=True)
+    upload_dir.mkdir(parents=True, exist_ok=True)
+    monkeypatch.setattr(settings, "UPLOAD_DIR", str(upload_dir))
+    session_id = client.post("/api/v1/sessions", json={"preferred_language": "en"}).json()["id"]
+    session = db_session.query(UserSession).filter_by(id=session_id).one()
+    session.state_blob = {
+        "mfa": {
+            "verified_at": datetime.now(timezone.utc).isoformat(),
+            "phone": "+91 XXXXXX3214",
+            "method": "sms",
+        }
+    }
+    db_session.commit()
+
+    try:
+        pdf = client.get("/api/v1/forms/demo-templates/bank_form").content
+        upload = client.post(
+            "/api/v1/forms/upload",
+            data={"session_id": session_id},
+            files={"file": ("bank_form.pdf", io.BytesIO(pdf), "application/pdf")},
+        )
+        assert upload.status_code == 200, upload.text
+        first = upload.json()["fields"][0]
+        answer = client.post(
+            f"/api/v1/forms/{upload.json()['form_id']}/fields/{first['id']}/answer",
+            json={"transcribed_text": "Ram Kumar", "language": "en"},
+        )
+        assert answer.status_code == 200, answer.text
+        assert answer.json()["nonce_id"]
+        assert answer.json()["challenge_digits"]
+    finally:
+        shutil.rmtree(upload_dir, ignore_errors=True)
