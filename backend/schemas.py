@@ -24,6 +24,34 @@ class SessionResponse(BaseModel):
     model_config = {"from_attributes": True}
 
 
+# ── Session SMS verification ─────────────────────────────────────────────────
+
+class OtpSendRequest(BaseModel):
+    session_id: str
+    phone: str
+    language: str = "en"
+
+
+class OtpSendResponse(BaseModel):
+    otp_id: str
+    masked_phone: str
+    code_length: int
+    expires_in_seconds: int
+    resend_after_seconds: int
+
+
+class OtpVerifyRequest(BaseModel):
+    session_id: str
+    otp_id: str
+    code: str
+
+
+class MfaStatusResponse(BaseModel):
+    session_id: str
+    verified: bool
+    masked_phone: Optional[str] = None
+
+
 # ─── Form ─────────────────────────────────────────────────────────────────────
 
 class FieldPosition(BaseModel):

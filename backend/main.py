@@ -11,7 +11,7 @@ from fastapi.staticfiles import StaticFiles
 
 from config import get_settings
 from database import engine, Base
-from routers import sessions, forms, confirmations, schemes, guidance, fraud
+from routers import sessions, forms, confirmations, schemes, guidance, fraud, auth
 
 settings = get_settings()
 
@@ -50,6 +50,7 @@ v1_router.include_router(confirmations.router)
 v1_router.include_router(schemes.router)
 v1_router.include_router(guidance.router)
 v1_router.include_router(fraud.router)
+v1_router.include_router(auth.router)
 app.include_router(v1_router)
 
 # ─── Root backward-compatibility routers ─────────────────────────────────────
@@ -59,6 +60,7 @@ app.include_router(confirmations.router)
 app.include_router(schemes.router)
 app.include_router(guidance.router)
 app.include_router(fraud.router)
+app.include_router(auth.router)
 
 # ─── Static files (uploads) ──────────────────────────────────────────────────
 if os.path.exists(settings.UPLOAD_DIR):

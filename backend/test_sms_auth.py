@@ -1,8 +1,29 @@
 import pytest
 
+from datetime import datetime, timedelta, timezone
+
 from config import Settings, get_settings
 from models import AuditLog, EventType, OtpChannel, PhoneOtp, UserSession
 from services import otp_service, twilio_verify_service
+
+
+@pytest.fixture
+def mock_twilio(monkeypatch):
+    settings = get_settings()
+    monkeypatch.setattr(settings, "TWILIO_ACCOUNT_SID", "AC" + "1" * 32)
+    monkeypatch.setattr(settings, "TWILIO_AUTH_TOKEN", "test-token")
+    monkeypatch.setattr(settings, "TWILIO_VERIFY_SERVICE_SID", "VA" + "2" * 32)
+    calls = []
+
+    def handler(action, **kwargs):
+        calls.append((action, kwargs))
+        if action == "send":
+            return {"sid": "VE" + "3" * 32, "status": "pending"}
+        return {"status": "approved" if kwargs.get("code") == "123456" else "pending"}
+
+    twilio_verify_service.set_mock_handler(handler)
+    yield calls
+    twilio_verify_service.set_mock_handler(None)
 
 
 def test_sms_auth_settings_have_safe_defaults_and_twilio_fields():
@@ -129,3 +150,103 @@ def test_send_and_verify_otp_links_user_and_marks_session_verified(db_session, m
     assert all("123456" not in repr(log.payload) for log in db_session.query(AuditLog).filter_by(session_id=session.id))
     assert all("VE" + "3" * 32 not in repr(log.payload) for log in db_session.query(AuditLog).filter_by(session_id=session.id))
     assert calls[0] == ("send", {"phone": "+919876543210", "channel": "sms"})
+
+
+def test_api_send_status_and_verify_never_return_provider_secrets(client, mock_twilio):
+    phone = "9876543211"
+    session_id = client.post("/api/v1/sessions", json={"preferred_language": "en"}).json()["id"]
+    sent = client.post(
+        "/api/v1/auth/otp/send",
+        json={"session_id": session_id, "phone": phone, "language": "en"},
+    )
+    assert sent.status_code == 200, sent.text
+    payload = sent.json()
+    assert set(payload) == {"otp_id", "masked_phone", "code_length", "expires_in_seconds", "resend_after_seconds"}
+    assert payload["masked_phone"] == "+91 XXXXXX3211"
+    assert payload["code_length"] == 6
+    assert phone not in sent.text
+    assert "VE" + "3" * 32 not in sent.text
+    assert "test-token" not in sent.text
+
+    status = client.get(f"/api/v1/auth/status/{session_id}")
+    assert status.status_code == 200
+    assert status.json() == {"session_id": session_id, "verified": False, "masked_phone": "+91 XXXXXX3211"}
+
+    verified = client.post(
+        "/api/v1/auth/otp/verify",
+        json={"session_id": session_id, "otp_id": payload["otp_id"], "code": "123456"},
+    )
+    assert verified.status_code == 200, verified.text
+    assert verified.json() == {
+        "session_id": session_id,
+        "verified": True,
+        "masked_phone": "+91 XXXXXX3211",
+    }
+    assert client.get(f"/api/v1/auth/status/{session_id}").json()["verified"] is True
+
+
+def test_api_rejects_cross_session_and_expired_or_replayed_requests(client, mock_twilio, db_session):
+    first = client.post("/api/v1/sessions", json={"preferred_language": "en"}).json()["id"]
+    second = client.post("/api/v1/sessions", json={"preferred_language": "en"}).json()["id"]
+    sent = client.post(
+        "/api/v1/auth/otp/send",
+        json={"session_id": first, "phone": "9876543212", "language": "en"},
+    ).json()
+
+    cross_session = client.post(
+        "/api/v1/auth/otp/verify",
+        json={"session_id": second, "otp_id": sent["otp_id"], "code": "123456"},
+    )
+    assert cross_session.status_code == 400
+    assert cross_session.json()["detail"]["code"] == "otp_invalid"
+
+    otp = db_session.query(PhoneOtp).filter_by(id=sent["otp_id"]).one()
+    otp.expires_at = datetime.now(timezone.utc) - timedelta(seconds=1)
+    db_session.commit()
+    expired = client.post(
+        "/api/v1/auth/otp/verify",
+        json={"session_id": first, "otp_id": sent["otp_id"], "code": "123456"},
+    )
+    assert expired.status_code == 400
+    assert expired.json()["detail"]["code"] == "otp_expired"
+
+    fresh = client.post(
+        "/api/v1/auth/otp/send",
+        json={"session_id": first, "phone": "9876543212", "language": "en"},
+    )
+    assert fresh.status_code == 200
+    verified = client.post(
+        "/api/v1/auth/otp/verify",
+        json={"session_id": first, "otp_id": fresh.json()["otp_id"], "code": "123456"},
+    )
+    assert verified.status_code == 200
+    replayed = client.post(
+        "/api/v1/auth/otp/verify",
+        json={"session_id": first, "otp_id": fresh.json()["otp_id"], "code": "123456"},
+    )
+    assert replayed.status_code == 400
+    assert replayed.json()["detail"]["code"] == "otp_replayed"
+
+
+def test_api_wrong_code_and_resend_cooldown_are_recoverable(client, mock_twilio):
+    session_id = client.post("/api/v1/sessions", json={"preferred_language": "en"}).json()["id"]
+    sent = client.post(
+        "/api/v1/auth/otp/send",
+        json={"session_id": session_id, "phone": "9876543213", "language": "en"},
+    )
+    assert sent.status_code == 200
+    wrong = client.post(
+        "/api/v1/auth/otp/verify",
+        json={"session_id": session_id, "otp_id": sent.json()["otp_id"], "code": "000000"},
+    )
+    assert wrong.status_code == 400
+    assert wrong.json()["detail"]["code"] == "otp_invalid"
+    assert "9876543213" not in wrong.text
+
+    resend = client.post(
+        "/api/v1/auth/otp/send",
+        json={"session_id": session_id, "phone": "9876543213", "language": "en"},
+    )
+    assert resend.status_code == 429
+    assert resend.json()["detail"]["code"] == "otp_resend_wait"
+    assert resend.json()["detail"]["retry_after"] > 0
