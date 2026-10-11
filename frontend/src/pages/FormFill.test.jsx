@@ -2,7 +2,7 @@ import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, test, vi } from 'vitest';
 import FormFill from './FormFill';
-import { getOtpStatus, uploadForm, getNextField, submitFieldAnswer, createChallenge } from '../api/client';
+import { getOtpStatus, uploadForm, getNextField, submitFieldAnswer } from '../api/client';
 import { useSession } from '../hooks/useSession';
 
 vi.mock('../hooks/useSession', () => ({ useSession: vi.fn() }));
