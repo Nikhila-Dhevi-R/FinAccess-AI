@@ -287,7 +287,7 @@ export default function Guidance() {
               key={i}
               onClick={() => handleSend(q)}
               disabled={isLoading}
-              className="btn btn-secondary btn-sm"
+              className="btn btn-secondary btn-sm guidance-quick-question"
               style={{
                 whiteSpace: 'nowrap',
                 fontSize: 13,

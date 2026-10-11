@@ -523,7 +523,7 @@ export default function Schemes() {
         <h1 className="page-title" style={{ fontSize: 32, fontWeight: 900, color: '#0f172a' }}>
           {t.title}
         </h1>
-        <p style={{ fontSize: 16, maxWidth: 680, margin: '8px auto 20px', color: '#475569', lineHeight: 1.4 }}>
+        <p style={{ fontSize: 16, maxWidth: 680, margin: '8px auto 20px', color: '#ffffff', lineHeight: 1.4 }}>
           {t.subtitle}
         </p>
 

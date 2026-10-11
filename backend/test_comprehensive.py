@@ -205,7 +205,7 @@ class TestNonceSecurity:
             bound_target_id="f-1",
         )
         assert nonce.id
-        assert len(nonce.challenge_digits.split()) == 3
+        assert len(nonce.challenge_digits.split()) == 4
         assert nonce.consumed is False
 
         # Expired test
@@ -267,7 +267,7 @@ class TestNonceSecurity:
             bound_action=BoundAction.CONFIRM_FIELD,
             bound_target_id="f-3",
         )
-        # Expected e.g. "4 7 2"
+        # Expected e.g. "4 7 2 9"
         digits = nonce.challenge_digits.split()
 
         # Partial digit attempt (e.g. only first digit "4")

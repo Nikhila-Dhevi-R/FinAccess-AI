@@ -1,61 +1,61 @@
-@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=Noto+Sans:wght@400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Noto+Sans:wght@400;500;600;700&display=swap');
 
 /* ── Humanised & Accessible Design Tokens ───────────────────────────── */
 :root {
   /* Pleasing, Humanised Colors (Non-neon, warm & gentle on eyes) */
-  --color-bg-primary: #F8F6F0;
-  --color-bg-secondary: #EFECE4;
-  --color-bg-card: #FFFFFF;
-  --color-bg-card-hover: #FDFDFD;
-  --color-bg-subtle: #F3EFE7;
+  --color-bg-primary: #071a33;
+  --color-bg-secondary: #0b2342;
+  --color-bg-card: rgba(255, 255, 255, 0.1);
+  --color-bg-card-hover: rgba(255, 255, 255, 0.16);
+  --color-bg-subtle: rgba(255, 255, 255, 0.08);
 
   /* Trustworthy Indian Navy / Deep Blue */
-  --color-primary: #1E3A8A;
-  --color-primary-hover: #1D4ED8;
-  --color-primary-dim: #EFF6FF;
-  --color-primary-border: #BFDBFE;
+  --color-primary: #7dd3fc;
+  --color-primary-hover: #38bdf8;
+  --color-primary-dim: rgba(56, 189, 248, 0.14);
+  --color-primary-border: rgba(125, 211, 252, 0.5);
 
   /* Legacy alias mapped to pleasing blue to remove neon cyan */
-  --color-teal: #1E40AF;
-  --color-teal-dim: #EFF6FF;
-  --color-teal-glow: rgba(30, 64, 175, 0.15);
+  --color-teal: #38bdf8;
+  --color-teal-dim: rgba(56, 189, 248, 0.14);
+  --color-teal-glow: rgba(56, 189, 248, 0.22);
 
   /* Warm Terracotta / Ochre for Schemes & Guidance */
-  --color-amber: #B45309;
-  --color-amber-dim: #FEF3C7;
-  --color-amber-border: #FDE68A;
-  --color-saffron: #C2410C;
+  --color-amber: #fbbf24;
+  --color-amber-dim: rgba(251, 191, 36, 0.14);
+  --color-amber-border: rgba(251, 191, 36, 0.48);
+  --color-saffron: #fb923c;
 
   /* Natural Harvest / Forest Green for Success & Approvals */
-  --color-green: #15803D;
-  --color-green-dim: #DCFCE7;
-  --color-green-border: #BBF7D0;
+  --color-green: #4ade80;
+  --color-green-dim: rgba(74, 222, 128, 0.14);
+  --color-green-border: rgba(74, 222, 128, 0.48);
 
   /* Warm Brick Red for Alerts & Fraud Warning */
-  --color-red: #B91C1C;
-  --color-red-dim: #FEE2E2;
-  --color-red-border: #FECACA;
+  --color-red: #fb7185;
+  --color-red-dim: rgba(251, 113, 133, 0.14);
+  --color-red-border: rgba(251, 113, 133, 0.48);
 
   /* High-Contrast, Crystal Clear Typography for Low-Literacy */
-  --color-text-primary: #1F2937;
-  --color-text-secondary: #4B5563;
-  --color-text-muted: #6B7280;
+  --color-text-primary: #f8fbff;
+  --color-text-secondary: #d3deee;
+  --color-text-muted: #a9bad0;
 
   /* Warm Borders & Accents */
-  --color-border: #E5E0D6;
-  --color-border-active: #1E40AF;
-  --color-border-hover: #D4CDC0;
+  --color-border: rgba(255, 255, 255, 0.18);
+  --color-border-active: #38bdf8;
+  --color-border-hover: rgba(125, 211, 252, 0.6);
 
   /* Gradients - Natural & Soft */
-  --gradient-primary: linear-gradient(135deg, #1E3A8A 0%, #2563EB 100%);
-  --gradient-amber: linear-gradient(135deg, #C2410C 0%, #D97706 100%);
-  --gradient-green: linear-gradient(135deg, #15803D 0%, #16A34A 100%);
-  --gradient-red: linear-gradient(135deg, #B91C1C 0%, #DC2626 100%);
-  --gradient-card: #FFFFFF;
-  --gradient-bg: linear-gradient(180deg, #FBF9F5 0%, #F4EFEB 100%);
+  --gradient-primary: linear-gradient(135deg, #1d4ed8 0%, #0284c7 100%);
+  --gradient-amber: linear-gradient(135deg, #b45309 0%, #d97706 100%);
+  --gradient-green: linear-gradient(135deg, #15803d 0%, #16a34a 100%);
+  --gradient-red: linear-gradient(135deg, #be123c 0%, #e11d48 100%);
+  --gradient-card: linear-gradient(135deg, rgba(255, 255, 255, 0.2) 0%, rgba(255, 255, 255, 0.08) 58%, rgba(125, 211, 252, 0.08) 100%);
+  --gradient-bg: linear-gradient(135deg, rgba(255, 255, 255, 0.3) 0%, rgba(255, 255, 255, 0.16) 30%, rgba(255, 255, 255, 0) 48%), radial-gradient(circle at 88% 8%, rgba(56, 189, 248, 0.22), transparent 30%), linear-gradient(150deg, #0d5792 0%, #0a376d 58%, #061a35 100%);
 
   /* Typography */
-  --font-main: 'Outfit', 'Noto Sans', sans-serif;
+  --font-main: 'Manrope', 'Noto Sans', sans-serif;
 
   /* Spacing */
   --space-1: 4px;
@@ -75,10 +75,10 @@
   --radius-full: 9999px;
 
   /* Tactile Shadows (Soft, no neon glow) */
-  --shadow-sm: 0 1px 2px rgba(44, 39, 32, 0.05);
-  --shadow-card: 0 3px 12px rgba(44, 39, 32, 0.05), 0 1px 3px rgba(44, 39, 32, 0.03);
-  --shadow-hover: 0 10px 24px rgba(44, 39, 32, 0.08), 0 2px 6px rgba(44, 39, 32, 0.04);
-  --shadow-float: 0 12px 32px rgba(30, 58, 138, 0.2), 0 4px 10px rgba(0, 0, 0, 0.06);
+  --shadow-sm: 0 4px 12px rgba(0, 0, 0, 0.16);
+  --shadow-card: 0 18px 44px rgba(0, 0, 0, 0.2), 0 3px 10px rgba(0, 0, 0, 0.12);
+  --shadow-hover: 0 24px 58px rgba(0, 0, 0, 0.28), 0 5px 14px rgba(0, 0, 0, 0.16);
+  --shadow-float: 0 16px 38px rgba(0, 0, 0, 0.3), 0 4px 12px rgba(0, 0, 0, 0.18);
 
   /* Transitions */
   --transition-fast: 0.15s ease;
@@ -1423,4 +1423,409 @@ input, textarea, select {
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
   }
+}
+
+/* Deep navy glass theme: keep content legible while giving every surface depth. */
+body {
+  background-color: var(--color-bg-primary);
+  background-image: var(--gradient-bg);
+  color: var(--color-text-primary);
+}
+
+.navbar {
+  background: rgba(4, 18, 38, 0.78);
+  border-bottom-color: rgba(186, 230, 253, 0.2);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.14);
+}
+
+.navbar-logo,
+.navbar-logo span,
+.nav-link,
+.card-title,
+.secondary-title,
+.page-title,
+.sketch-title {
+  color: var(--color-text-primary) !important;
+}
+
+.nav-link:hover,
+.nav-link.active {
+  color: #e0f2fe;
+  background: rgba(56, 189, 248, 0.16);
+  border-color: rgba(125, 211, 252, 0.45);
+}
+
+.sketch-subtitle,
+.page-subtitle,
+.sketch-header > p,
+.card-subtitle,
+.secondary-desc {
+  color: var(--color-text-secondary) !important;
+}
+
+.glass-card,
+.action-card,
+.secondary-card,
+.field-item,
+.question-panel,
+.scheme-card,
+.chat-msg.bot,
+.chat-input-row {
+  background: var(--gradient-card) !important;
+  border-color: rgba(186, 230, 253, 0.22) !important;
+  box-shadow: var(--shadow-card);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+}
+
+.glass-card:hover,
+.action-card:hover,
+.secondary-card:hover,
+.scheme-card:hover {
+  border-color: rgba(125, 211, 252, 0.62) !important;
+  box-shadow: var(--shadow-hover);
+}
+
+.action-card.card-1 {
+  border-color: rgba(56, 189, 248, 0.62) !important;
+}
+
+.action-card.card-2 {
+  border-color: rgba(251, 191, 36, 0.58) !important;
+}
+
+.card-read-aloud-btn,
+.audio-assist-btn,
+.lang-btn,
+.btn-ghost,
+.floating-voice-label {
+  background: rgba(255, 255, 255, 0.1) !important;
+  border-color: rgba(186, 230, 253, 0.28) !important;
+  color: var(--color-text-secondary) !important;
+}
+
+.card-read-aloud-btn:hover,
+.audio-assist-btn:hover,
+.lang-btn:hover,
+.btn-ghost:hover {
+  background: rgba(56, 189, 248, 0.18) !important;
+  border-color: rgba(125, 211, 252, 0.62) !important;
+  color: #e0f2fe !important;
+}
+
+.lang-btn.selected {
+  background: var(--gradient-primary) !important;
+  border-color: #38bdf8 !important;
+  color: #ffffff !important;
+}
+
+.card-arrow {
+  background: rgba(255, 255, 255, 0.1);
+  color: var(--color-text-primary);
+}
+
+.field-item.active,
+.transcript-box.has-text,
+.question-step {
+  background: rgba(56, 189, 248, 0.16);
+  border-color: rgba(125, 211, 252, 0.58);
+}
+
+.field-item.confirmed {
+  background: rgba(74, 222, 128, 0.14);
+  border-color: rgba(74, 222, 128, 0.48);
+}
+
+.scheme-benefit,
+.transcript-box,
+.chat-input,
+.chat-msg.bot {
+  background: rgba(255, 255, 255, 0.08) !important;
+  border-color: rgba(186, 230, 253, 0.24) !important;
+  color: var(--color-text-secondary) !important;
+}
+
+.scheme-name,
+.scheme-card h3,
+.question-panel h2,
+.question-panel h3,
+.question-panel strong,
+.scheme-results-count {
+  color: var(--color-text-primary) !important;
+}
+
+.scheme-ministry,
+.scheme-card p,
+.question-panel > p,
+.question-panel span,
+.scheme-step {
+  color: var(--color-text-secondary) !important;
+}
+
+input,
+textarea,
+select,
+.chat-input {
+  background: rgba(3, 15, 32, 0.58) !important;
+  color: var(--color-text-primary) !important;
+  border-color: rgba(186, 230, 253, 0.3) !important;
+}
+
+input::placeholder,
+textarea::placeholder {
+  color: rgba(211, 222, 238, 0.62);
+}
+
+input:focus,
+textarea:focus,
+select:focus,
+.chat-input:focus {
+  background: rgba(3, 15, 32, 0.78) !important;
+  border-color: #38bdf8 !important;
+  box-shadow: 0 0 0 4px rgba(56, 189, 248, 0.16);
+}
+
+.voice-btn-wrapper {
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.15), rgba(255, 255, 255, 0.06));
+  border-color: rgba(186, 230, 253, 0.26);
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
+}
+
+.voice-btn-label {
+  color: var(--color-text-primary) !important;
+}
+
+@media (max-width: 768px) {
+  .navbar {
+    background: rgba(4, 18, 38, 0.9);
+  }
+}
+
+/* Landing card contrast: inline legacy colors are overridden for the dark surface. */
+.action-card h2 {
+  color: #f8fbff !important;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.22);
+}
+
+.action-card p {
+  color: #dbeafe !important;
+}
+
+.action-card .card-read-aloud-btn {
+  background: rgba(248, 250, 252, 0.96) !important;
+  border-color: rgba(186, 230, 253, 0.82) !important;
+  color: #102a43 !important;
+}
+
+.action-card .card-read-aloud-btn:hover {
+  background: #ffffff !important;
+  color: #0c4a6e !important;
+}
+
+/* Refined motion and depth for the new Manrope and navy-white palette. */
+.action-card,
+.secondary-card,
+.glass-card,
+.scheme-card {
+  overflow: hidden;
+  isolation: isolate;
+  transition: transform 260ms cubic-bezier(0.2, 0.75, 0.25, 1), box-shadow 260ms ease, border-color 220ms ease, background 260ms ease;
+}
+
+.action-card::after,
+.secondary-card::after,
+.glass-card::after,
+.scheme-card::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background: linear-gradient(118deg, rgba(255, 255, 255, 0.18), transparent 42%, rgba(125, 211, 252, 0.08));
+  opacity: 0;
+  transform: translateX(-8%);
+  transition: opacity 260ms ease, transform 320ms ease;
+}
+
+.action-card > *,
+.secondary-card > *,
+.glass-card > *,
+.scheme-card > * {
+  position: relative;
+  z-index: 1;
+}
+
+.action-card:hover,
+.secondary-card:hover,
+.glass-card:hover,
+.scheme-card:hover {
+  transform: translateY(-5px);
+}
+
+.action-card:hover::after,
+.secondary-card:hover::after,
+.glass-card:hover::after,
+.scheme-card:hover::after {
+  opacity: 1;
+  transform: translateX(0);
+}
+
+button,
+.btn,
+.audio-assist-btn,
+.lang-btn,
+.card-read-aloud-btn,
+.voice-launch-button,
+.voice-btn,
+.floating-voice-circle {
+  transition: transform 180ms ease, box-shadow 220ms ease, background 220ms ease, border-color 220ms ease, filter 220ms ease;
+}
+
+button:hover:not(:disabled),
+.btn:hover,
+.audio-assist-btn:hover,
+.lang-btn:hover,
+.card-read-aloud-btn:hover {
+  transform: translateY(-1px);
+}
+
+.voice-btn:hover:not(:disabled) {
+  transform: translateY(-2px) scale(1.04);
+}
+
+.voice-launch-button:hover,
+.floating-voice-circle:hover {
+  transform: translateY(-3px);
+}
+
+.action-card:focus-visible,
+.secondary-card:focus-visible,
+.glass-card:focus-visible,
+.scheme-card:focus-visible,
+button:focus-visible,
+a:focus-visible,
+input:focus-visible,
+textarea:focus-visible,
+select:focus-visible {
+  outline: 3px solid rgba(186, 230, 253, 0.85);
+  outline-offset: 4px;
+}
+
+/* Numbered landing actions: light, tinted glass with a distinct colour per choice. */
+.action-card.card-1 {
+  --action-accent: #38bdf8;
+  --action-accent-rgb: 56, 189, 248;
+}
+
+.action-card.card-2 {
+  --action-accent: #fbbf24;
+  --action-accent-rgb: 251, 191, 36;
+}
+
+.action-card.card-3 {
+  --action-accent: #a78bfa;
+  --action-accent-rgb: 167, 139, 250;
+}
+
+.action-card.card-4 {
+  --action-accent: #34d399;
+  --action-accent-rgb: 52, 211, 153;
+}
+
+.action-card.card-1,
+.action-card.card-2,
+.action-card.card-3,
+.action-card.card-4 {
+  background:
+    linear-gradient(135deg, rgba(255, 255, 255, 0.18), rgba(255, 255, 255, 0.07)),
+    radial-gradient(circle at 9% 12%, rgba(var(--action-accent-rgb), 0.26), transparent 44%),
+    rgba(8, 31, 60, 0.68) !important;
+  border-color: rgba(var(--action-accent-rgb), 0.82) !important;
+  box-shadow: 0 16px 36px rgba(0, 12, 30, 0.26), inset 0 1px 0 rgba(255, 255, 255, 0.22) !important;
+  backdrop-filter: blur(22px) saturate(125%);
+  -webkit-backdrop-filter: blur(22px) saturate(125%);
+}
+
+.action-card.card-1:hover,
+.action-card.card-2:hover,
+.action-card.card-3:hover,
+.action-card.card-4:hover {
+  border-color: var(--action-accent) !important;
+  box-shadow: 0 20px 42px rgba(0, 12, 30, 0.34), 0 0 0 1px rgba(var(--action-accent-rgb), 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.3) !important;
+}
+
+.action-card > div:first-child {
+  background: var(--action-accent) !important;
+  color: #061a35 !important;
+  border: 1px solid rgba(255, 255, 255, 0.56);
+  box-shadow: 0 7px 18px rgba(var(--action-accent-rgb), 0.3);
+}
+
+.action-card > div:nth-child(2) {
+  filter: drop-shadow(0 2px 5px rgba(0, 0, 0, 0.22));
+}
+
+.action-card > div:nth-child(3) h2 {
+  color: #f8fbff !important;
+  letter-spacing: -0.015em;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+}
+
+.action-card > div:nth-child(3) p {
+  color: #e0f2fe !important;
+  font-weight: 500;
+}
+
+.action-card > div:nth-child(3) button {
+  background: rgba(255, 255, 255, 0.96) !important;
+  border-color: rgba(255, 255, 255, 0.78) !important;
+  color: #102a43 !important;
+  box-shadow: 0 2px 8px rgba(0, 12, 30, 0.18);
+}
+
+.action-card > div:nth-child(3) button:hover {
+  background: #ffffff !important;
+  border-color: var(--action-accent) !important;
+  color: #061a35 !important;
+}
+
+.action-card > div:last-child {
+  color: var(--action-accent) !important;
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.26));
+}
+
+/* Fraud sample messages need a light surface because their copy is long and truncated. */
+.fraud-sample-button {
+  background: linear-gradient(135deg, #f8fbff, #dbeafe) !important;
+  border-color: rgba(186, 230, 253, 0.92) !important;
+  color: #102a43 !important;
+  box-shadow: 0 5px 14px rgba(0, 12, 30, 0.18) !important;
+}
+
+.fraud-sample-button strong {
+  color: #102a43 !important;
+  font-weight: 800;
+}
+
+.fraud-sample-button span {
+  color: #334e68 !important;
+  font-weight: 600;
+}
+
+.fraud-sample-button:hover {
+  background: #ffffff !important;
+  border-color: #38bdf8 !important;
+  color: #061a35 !important;
+}
+
+/* Keep the popular-question labels readable on their translucent navy chips. */
+.guidance-quick-question {
+  color: #ffffff !important;
+  font-weight: 700;
+  text-shadow: 0 1px 2px rgba(0, 12, 30, 0.52);
+}
+
+.guidance-quick-question:hover {
+  color: #ffffff !important;
 }

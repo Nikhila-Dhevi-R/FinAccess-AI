@@ -310,7 +310,7 @@ export default function FraudCheck() {
               <button
                 key={idx}
                 onClick={() => handleAnalyze(demo.text)}
-                className="btn btn-secondary"
+                className="btn btn-secondary fraud-sample-button"
                 style={{
                   textAlign: 'left',
                   padding: '10px 14px',

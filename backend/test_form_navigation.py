@@ -44,9 +44,28 @@ def test_back_asks_a_confirmed_field_again_and_change_needs_reconfirming(client)
     assert back["field"]["id"] == first["id"]
     assert back["field"]["status"] == "confirmed"          # just looking does not undo the answer
 
-    client.post(f"/api/v1/forms/{form_id}/fields/{first['id']}/answer", json={"transcribed_text": "Sita Devi", "language": "en"})
+    changed = client.post(
+        f"/api/v1/forms/{form_id}/fields/{first['id']}/answer",
+        json={"transcribed_text": "Sita Devi", "language": "en"},
+    )
+    assert changed.status_code == 200
+    changed_data = changed.json()
+    assert changed_data["interpreted_value"] == "Sita Devi"
+
+    # A changed value is provisional until its new voice challenge succeeds.
+    review = client.get(
+        f"/api/v1/forms/{form_id}/next-field", params={"field_id": first["id"]}
+    ).json()
+    assert review["field"]["status"] == "asked"
+    confirmed = client.post(
+        f"/api/v1/confirmations/{changed_data['nonce_id']}/respond",
+        json={"session_id": sid, "transcribed_text": changed_data["challenge_digits"]},
+    )
+    assert confirmed.status_code == 200
+    assert confirmed.json()["action_committed"] is True
+
     again = client.get(f"/api/v1/forms/{form_id}/next-field").json()
-    assert again["field"]["id"] == first["id"]             # changed but not confirmed → asked again
+    assert again["field"]["id"] != first["id"]
 
 
 def test_unknown_field_id_is_404(client):

@@ -24,8 +24,8 @@ vi.mock('../hooks/useSpeech', () => ({
 
 const nonce = {
   nonce_id: 'nonce-1',
-  challenge_digits: '123',
-  challenge_phrase: 'Say 1 2 3',
+  challenge_digits: '1234',
+  challenge_phrase: 'Say 1 2 3 4',
   expires_in_seconds: 30,
 };
 
@@ -40,9 +40,9 @@ function renderPrompt(props = {}) {
   );
 }
 
-async function submitDigits(value = '123') {
+async function submitDigits(value = '1234') {
   const user = userEvent.setup();
-  await user.type(screen.getByPlaceholderText('3 digits'), value);
+  await user.type(screen.getByPlaceholderText('4 digits'), value);
   await user.click(screen.getByRole('button', { name: 'OK' }));
 }
 
@@ -61,7 +61,7 @@ describe('ChallengePrompt', () => {
     });
     renderPrompt({ onSuccess, onFailure });
 
-    await submitDigits('999');
+    await submitDigits('9999');
 
     await waitFor(() => expect(onFailure).toHaveBeenCalledTimes(1));
     expect(onSuccess).not.toHaveBeenCalled();
@@ -85,8 +85,8 @@ describe('ChallengePrompt', () => {
       resolveRequest = resolve;
     }));
     const { container } = renderPrompt();
-    const input = screen.getByPlaceholderText('3 digits');
-    fireEvent.change(input, { target: { value: '123' } });
+    const input = screen.getByPlaceholderText('4 digits');
+    fireEvent.change(input, { target: { value: '1234' } });
     const form = container.querySelector('form');
 
     fireEvent.submit(form);
