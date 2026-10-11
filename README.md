@@ -24,7 +24,7 @@ Financial scams create a related problem. A suspicious message, image, link, or 
 
 ## System architecture
 
-[![Architecture diagram of nikhila-dhevi-r/finaccess-ai](https://gitdiagram.com/nikhila-dhevi-r/finaccess-ai/diagram.png)](https://gitdiagram.com/nikhila-dhevi-r/finaccess-ai?utm_source=readme&utm_medium=picture)
+[![FinAccess AI system architecture](docs/system-architecture.png)](https://gitdiagram.com/nikhila-dhevi-r/finaccess-ai?utm_source=readme&utm_medium=picture)
 
 The system is organized into the following layers.
 
