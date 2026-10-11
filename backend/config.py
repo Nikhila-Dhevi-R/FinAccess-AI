@@ -20,6 +20,20 @@ class Settings(BaseSettings):
     SECRET_KEY: str = "finaccess-dev-secret-change-in-production"
     NONCE_EXPIRY_SECONDS: int = 30
 
+    # Session SMS verification gate
+    MFA_REQUIRED: bool = False
+    OTP_PROVIDER: str = "twilio"
+    OTP_LENGTH: int = 6
+    OTP_EXPIRY_SECONDS: int = 300
+    OTP_MAX_ATTEMPTS: int = 5
+    OTP_RESEND_COOLDOWN_SECONDS: int = 30
+    OTP_MAX_SENDS_PER_HOUR: int = 5
+    OTP_DEFAULT_COUNTRY_CODE: str = "91"
+    MFA_SESSION_TTL_MINUTES: int = 720
+    TWILIO_ACCOUNT_SID: str = ""
+    TWILIO_AUTH_TOKEN: str = ""
+    TWILIO_VERIFY_SERVICE_SID: str = ""
+
     # OCR
     OCR_BACKEND: str = "stub"  # "stub" | "tesseract" | "cloud"
     TESSERACT_CMD: str = "tesseract"
