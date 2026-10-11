@@ -915,12 +915,10 @@ export default function FormFill() {
 
                   {/* Readback voice sentence */}
                   <div
+                    className="form-confirm-readback"
                     style={{
                       fontSize: 19,
                       fontWeight: 700,
-                      color: '#0f172a',
-                      background: '#f8fafc',
-                      border: '1.5px solid #e2e8f0',
                       padding: '14px 24px',
                       borderRadius: 14,
                       marginBottom: 20,
@@ -932,16 +930,15 @@ export default function FormFill() {
                   </div>
 
                   {/* Interpreted value callout */}
-                  <div style={{ marginBottom: 24 }}>
-                    <span style={{ fontSize: 14, color: '#64748b', fontWeight: 600 }}>
+                  <div className="form-interpreted-value" style={{ marginBottom: 24 }}>
+                    <span className="form-interpreted-label" style={{ fontSize: 14, fontWeight: 600 }}>
                       {t.interpretedAs}{' '}
                     </span>
                     <span
+                      className="form-interpreted-answer"
                       style={{
                         fontSize: 18,
                         fontWeight: 800,
-                        color: '#0369a1',
-                        background: '#e0f2fe',
                         padding: '4px 12px',
                         borderRadius: 8,
                       }}
@@ -949,9 +946,9 @@ export default function FormFill() {
                       {answerData.interpreted_value}
                     </span>
                     {answerData.form_value && answerData.form_value !== answerData.interpreted_value && (
-                      <div style={{ marginTop: 10, fontSize: 15, color: '#334155' }}>
+                      <div className="form-written-value" style={{ marginTop: 10, fontSize: 15 }}>
                         {t.writtenAs}{' '}
-                        <strong style={{ fontSize: 18, color: '#0f172a', background: '#f1f5f9', padding: '3px 10px', borderRadius: 8 }}>
+                        <strong className="form-written-answer" style={{ fontSize: 18, padding: '3px 10px', borderRadius: 8 }}>
                           {answerData.form_value}
                         </strong>
                       </div>

@@ -527,10 +527,10 @@ export default function FraudCheck() {
               {/* Red flags */}
               {result.fraud_indicators && result.fraud_indicators.length > 0 && (
                 <div style={{ marginBottom: 20 }}>
-                  <h4 style={{ fontSize: 13, fontWeight: 700, textTransform: 'uppercase', opacity: 0.8, marginBottom: 8 }}>{t.redFlags}</h4>
+                  <h4 className="fraud-indicators-title" style={{ fontSize: 13, fontWeight: 700, textTransform: 'uppercase', marginBottom: 8 }}>{t.redFlags}</h4>
                   <div className="fraud-indicators">
                     {result.fraud_indicators.map((ind, i) => (
-                      <div key={i} className="fraud-indicator" style={{ borderLeft: '3px solid var(--color-red)' }}>
+                      <div key={i} className="fraud-indicator">
                         <AlertTriangle size={15} color="var(--color-red)" style={{ marginTop: 2, flexShrink: 0 }} />
                         <span>{ind}</span>
                       </div>
@@ -541,16 +541,15 @@ export default function FraudCheck() {
 
               {/* Advice */}
               <div
+                className="fraud-advice"
                 style={{
-                  background: 'rgba(255, 255, 255, 0.8)',
-                  border: '1px solid var(--color-border)',
                   padding: 'var(--space-4)',
                   borderRadius: 'var(--radius-md)',
                   marginBottom: 20,
                 }}
               >
-                <h4 style={{ fontSize: 13, fontWeight: 700, color: 'var(--color-primary)', marginBottom: 4 }}>{t.action}</h4>
-                <p style={{ margin: 0, fontSize: 14 }}>{result.advice}</p>
+                <h4 className="fraud-advice-title" style={{ fontSize: 13, fontWeight: 700, marginBottom: 4 }}>{t.action}</h4>
+                <p className="fraud-advice-copy" style={{ margin: 0, fontSize: 14 }}>{result.advice}</p>
               </div>
 
               {/* Emergency contacts */}
