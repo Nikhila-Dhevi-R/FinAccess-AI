@@ -222,21 +222,4 @@ The browser speech tests use mocked SpeechRecognition and speech synthesis objec
 5. The application does not currently use Twilio or mobile OTP verification.
 6. Production deployments should use a strong secret key, restricted CORS origins, HTTPS, access controlled storage, and a managed database where appropriate.
 
-## Known limitations
 
-1. Speech recognition depends on browser support, microphone permissions, background noise, and the selected browser language.
-2. The default backend settings use local stub providers for speech, translation, OCR, and guidance integrations.
-3. Tesseract must be installed separately when local OCR is enabled.
-4. Scheme information is maintained in the application data files and should be reviewed before a public deployment.
-5. The repository does not currently include a separate license file.
-
-## Contributing
-
-1. Create a focused branch for the change.
-2. Keep secrets, local databases, uploads, and generated build files out of commits.
-3. Run the relevant frontend and backend checks before opening a pull request.
-4. Update this README when setup, routes, configuration, or user workflows change.
-
-## Project status
-
-FinAccess AI is an active project. The current repository includes the multilingual interface, voice form workflow, randomized form challenges, scheme discovery, guidance, fraud checks, PDF generation, and the local development configuration described above.
