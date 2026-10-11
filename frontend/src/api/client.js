@@ -21,6 +21,16 @@ export const getSession = (id) =>
 export const updateLanguage = (sessionId, language) =>
   api.patch(`/sessions/${sessionId}/language`, null, { params: { language } }).then(r => r.data);
 
+// ── Session SMS verification ───────────────────────────────────────────────
+export const sendOtp = (sessionId, phone, language = 'en') =>
+  api.post('/auth/otp/send', { session_id: sessionId, phone, language }).then(r => r.data);
+
+export const verifyOtp = (sessionId, otpId, code) =>
+  api.post('/auth/otp/verify', { session_id: sessionId, otp_id: otpId, code }).then(r => r.data);
+
+export const getOtpStatus = (sessionId) =>
+  api.get(`/auth/status/${sessionId}`).then(r => r.data);
+
 // ── Forms ─────────────────────────────────────────────────────────────
 export const uploadForm = (sessionId, file, language) => {
   const form = new FormData();
