@@ -39,7 +39,7 @@ export function VoiceButton({
   label,
   error,
 }) {
-  const sizeMap = { large: 96, medium: 68, small: 52 };
+  const sizeMap = { large: 128, medium: 88, small: 64 };
   const px = sizeMap[size] || 96;
   const baseLang = (language || 'en').split('-')[0];
   const l = LABELS[baseLang] || LABELS.en;
@@ -47,7 +47,7 @@ export function VoiceButton({
   const displayLabel = label || (isSpeaking ? l.speaking : isListening ? l.listening : error ? 'Tap to retry' : l.idle);
 
   return (
-    <div className="voice-btn-wrapper" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', margin: '14px 0' }}>
+    <div className={`voice-btn-wrapper voice-btn-wrapper-${size}${isListening ? ' is-listening' : ''}${isSpeaking ? ' is-speaking' : ''}`} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', margin: '14px 0' }}>
       <div className="voice-btn-outer" style={{ position: 'relative' }}>
         {isListening && (
           <>
@@ -57,7 +57,7 @@ export function VoiceButton({
         )}
         <button
           type="button"
-          className={`voice-btn${isListening ? ' recording' : ''}`}
+          className={`voice-btn${isListening ? ' recording' : ''}${isSpeaking ? ' speaking' : ''}${error ? ' has-error' : ''}`}
           style={{
             width: px,
             height: px,
@@ -66,15 +66,16 @@ export function VoiceButton({
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            border: isListening ? '4px solid #ef4444' : error ? '3px solid #f59e0b' : '3px solid var(--color-teal, #0d9488)',
-            background: isListening ? '#fee2e2' : error ? '#fef3c7' : 'var(--color-bg-primary, #ffffff)',
-            color: isListening ? '#b91c1c' : error ? '#b45309' : 'var(--color-teal, #0d9488)',
-            boxShadow: isListening ? '0 0 24px rgba(239, 68, 68, 0.4)' : '0 8px 24px rgba(0, 0, 0, 0.12)',
+            border: '4px solid #ffffff',
+            background: isListening ? 'linear-gradient(145deg, #dc2626, #991b1b)' : error ? 'linear-gradient(145deg, #d97706, #b45309)' : 'var(--gradient-primary)',
+            color: '#ffffff',
+            boxShadow: isListening ? '0 12px 32px rgba(185, 28, 28, 0.36)' : error ? '0 12px 32px rgba(180, 83, 9, 0.28)' : '0 12px 30px rgba(30, 58, 138, 0.28)',
             transition: 'all 0.25s ease',
           }}
           onClick={onClick}
           disabled={disabled}
           aria-label={displayLabel}
+          aria-pressed={isListening}
           title={error || displayLabel}
         >
           {isSpeaking ? (

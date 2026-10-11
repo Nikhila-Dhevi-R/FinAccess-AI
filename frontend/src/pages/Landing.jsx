@@ -337,58 +337,36 @@ export default function Landing() {
         </motion.p>
 
         {/* ── BIG VOICE ONBOARDING START BUTTON ── */}
-        <div style={{ marginBottom: 24 }}>
+        <div className="voice-launch-shell">
           <motion.button
             type="button"
+            className={`voice-launch-button${isSpeaking || isListening ? ' active' : ''}`}
             whileHover={{ scale: 1.03 }}
             whileTap={{ scale: 0.97 }}
             onClick={startFullVoiceFlow}
-            style={{
-              background: isSpeaking || isListening ? '#16a34a' : 'linear-gradient(135deg, #0284c7, #0369a1)',
-              color: '#ffffff',
-              border: 'none',
-              borderRadius: 36,
-              padding: '16px 36px',
-              fontSize: 18,
-              fontWeight: 900,
-              cursor: 'pointer',
-              display: 'inline-flex',
-              alignItems: 'center',
-              gap: 12,
-              boxShadow: '0 8px 30px rgba(2, 132, 199, 0.4)',
-              transition: 'background 0.3s ease',
-            }}
+            aria-pressed={isListening}
+            aria-busy={isSpeaking || isListening}
           >
-            <Mic size={26} />
-            <div style={{ textAlign: 'left' }}>
-              <div>{t.startVoiceBtn}</div>
-              <div style={{ fontSize: 12, fontWeight: 500, opacity: 0.9 }}>{t.startVoiceSub}</div>
-            </div>
+            <span className="voice-launch-icon" aria-hidden="true">
+              <Mic size={30} strokeWidth={2.5} />
+            </span>
+            <span className="voice-launch-copy">
+              <span className="voice-launch-title">{t.startVoiceBtn}</span>
+              <span className="voice-launch-subtitle">{t.startVoiceSub}</span>
+            </span>
           </motion.button>
         </div>
 
         {/* Live Voice Status Box */}
         {(voiceOnboardingState !== 'idle' || isSpeaking || isListening) && (
           <motion.div
+            className="voice-status-panel"
             initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
-            style={{
-              background: '#eff6ff',
-              border: '2px solid #93c5fd',
-              borderRadius: 16,
-              padding: '12px 20px',
-              maxWidth: 580,
-              margin: '0 auto 20px',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              gap: 12,
-              color: '#1e3a8a',
-              fontWeight: 700,
-              fontSize: 15,
-            }}
+            role="status"
+            aria-live="polite"
           >
-            <div className="loader" style={{ width: 20, height: 20, borderWidth: 3 }} />
+            <div className="loader voice-status-loader" />
             <span>{transcript ? `${t.heard}: "${transcript}"` : voiceFeedback || (isListening ? t.listeningNow : t.speakingNow)}</span>
           </motion.div>
         )}
@@ -396,7 +374,7 @@ export default function Landing() {
       </header>
 
       {/* 4 Prominent Numbered Picture Action Cards */}
-      <main className="sketch-cards" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(360px, 1fr))', gap: 20 }}>
+      <main className="sketch-cards">
         {/* 1. Form Fill Card */}
         <motion.div
           className="action-card card-1"
