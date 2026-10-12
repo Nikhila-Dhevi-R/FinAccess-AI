@@ -2046,8 +2046,19 @@ select:focus-visible {
 }
 
 .auth-input:focus {
+  color: #102a43 !important;
+  background: rgba(255, 255, 255, 0.99) !important;
   border-color: #0284c7 !important;
   box-shadow: 0 0 0 4px rgba(14, 165, 233, 0.18), inset 0 1px 2px rgba(15, 42, 67, 0.08);
+}
+
+.auth-input:-webkit-autofill,
+.auth-input:-webkit-autofill:hover,
+.auth-input:-webkit-autofill:focus,
+.auth-input:-webkit-autofill:active {
+  -webkit-text-fill-color: #102a43 !important;
+  -webkit-box-shadow: 0 0 0 1000px rgba(255, 255, 255, 0.99) inset, inset 0 1px 2px rgba(15, 42, 67, 0.08) !important;
+  caret-color: #102a43;
 }
 
 .auth-mpin-input {
