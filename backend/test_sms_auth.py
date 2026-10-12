@@ -5,7 +5,10 @@ import io
 import shutil
 from pathlib import Path
 
+from sqlalchemy import create_engine, inspect, text
+
 from config import Settings, get_settings
+from database import ensure_schema
 from models import AuditLog, EventType, OtpChannel, PhoneOtp, UserSession
 from services import otp_service, twilio_verify_service
 
@@ -44,6 +47,62 @@ def test_sms_auth_settings_have_safe_defaults_and_twilio_fields():
     assert settings.TWILIO_ACCOUNT_SID == ""
     assert settings.TWILIO_AUTH_TOKEN == ""
     assert settings.TWILIO_VERIFY_SERVICE_SID == ""
+
+
+def test_existing_phone_otp_table_gets_twilio_reference_column():
+    legacy_engine = create_engine("sqlite:///:memory:")
+    with legacy_engine.begin() as connection:
+        connection.execute(
+            text(
+                """
+                CREATE TABLE phone_otps (
+                    id VARCHAR PRIMARY KEY,
+                    session_id VARCHAR NOT NULL,
+                    phone VARCHAR NOT NULL,
+                    code_hash VARCHAR,
+                    channel VARCHAR NOT NULL,
+                    issued_at DATETIME,
+                    expires_at DATETIME NOT NULL,
+                    attempt_count INTEGER,
+                    consumed BOOLEAN,
+                    consumed_at DATETIME
+                )
+                """
+            )
+        )
+        connection.execute(
+            text(
+                """
+                INSERT INTO phone_otps (
+                    id, session_id, phone, code_hash, channel, issued_at, expires_at,
+                    attempt_count, consumed, consumed_at
+                ) VALUES (
+                    'legacy-otp', 'legacy-session', '+919876543210', 'legacy-hash',
+                    'SMS', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 0, 0, NULL
+                )
+                """
+            )
+        )
+
+    ensure_schema(legacy_engine)
+
+    columns = {column["name"] for column in inspect(legacy_engine).get_columns("phone_otps")}
+    assert "verification_sid" in columns
+    assert "code_hash" not in columns
+    with legacy_engine.begin() as connection:
+        connection.execute(
+            text(
+                """
+                INSERT INTO phone_otps (
+                    id, session_id, phone, verification_sid, channel, issued_at,
+                    expires_at, attempt_count, consumed, consumed_at
+                ) VALUES (
+                    'new-otp', 'legacy-session', '+919876543210', 'VE123', 'SMS',
+                    CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 0, 0, NULL
+                )
+                """
+            )
+        )
 
 
 def test_phone_otp_metadata_stores_reference_without_the_code():

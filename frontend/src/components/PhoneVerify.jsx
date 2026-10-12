@@ -131,26 +131,26 @@ export function PhoneVerify({ sessionId, language = 'en', onVerified, onError })
 
   if (verified) {
     return (
-      <section className="glass-card otp-verification-panel" style={{ maxWidth: 560, margin: '0 auto', padding: 28, textAlign: 'center' }}>
+      <section className="glass-card otp-verification-panel otp-card" style={{ maxWidth: 560, margin: '0 auto', padding: 28, textAlign: 'center' }}>
         <CheckCircle2 size={46} color="#16a34a" aria-hidden="true" />
-        <h2 style={{ margin: '12px 0 6px', color: '#0f172a', fontSize: 22 }}>{t.verified}</h2>
+        <h2 className="otp-title" style={{ margin: '12px 0 6px', color: '#0f172a', fontSize: 22 }}>{t.verified}</h2>
       </section>
     );
   }
 
   return (
-    <section className="glass-card otp-verification-panel" style={{ maxWidth: 560, margin: '0 auto', padding: 28 }}>
+    <section className="glass-card otp-verification-panel otp-card" style={{ maxWidth: 560, margin: '0 auto', padding: 28 }}>
       <div style={{ display: 'flex', gap: 12, alignItems: 'flex-start', marginBottom: 20 }}>
         <ShieldCheck size={34} color="#2563eb" aria-hidden="true" />
         <div>
-          <h2 style={{ margin: 0, color: '#0f172a', fontSize: 23 }}>{t.title}</h2>
-          <p style={{ margin: '6px 0 0', color: '#334155', lineHeight: 1.5 }}>{t.subtitle}</p>
+          <h2 className="otp-title" style={{ margin: 0, color: '#0f172a', fontSize: 23 }}>{t.title}</h2>
+          <p className="otp-subtitle" style={{ margin: '6px 0 0', color: '#334155', lineHeight: 1.5 }}>{t.subtitle}</p>
         </div>
       </div>
 
       {!request ? (
         <form onSubmit={handleSend}>
-          <label htmlFor="otp-phone" style={{ display: 'block', color: '#0f172a', fontWeight: 700, marginBottom: 6 }}>{t.phone}</label>
+          <label className="otp-label" htmlFor="otp-phone" style={{ display: 'block', color: '#0f172a', fontWeight: 700, marginBottom: 6 }}>{t.phone}</label>
           <input
             id="otp-phone"
             type="tel"
@@ -159,16 +159,17 @@ export function PhoneVerify({ sessionId, language = 'en', onVerified, onError })
             value={phone}
             onChange={(event) => setPhone(event.target.value.replace(/[^0-9+ -]/g, '').slice(0, 16))}
             placeholder={t.phoneHint}
+            className="otp-input"
             style={{ width: '100%', padding: '12px 14px', borderRadius: 12, border: '1px solid #94a3b8', color: '#0f172a', fontSize: 16, boxSizing: 'border-box' }}
           />
-          <button type="submit" className="btn btn-primary" disabled={busy || !phone.trim()} style={{ marginTop: 14, width: '100%' }}>
+          <button type="submit" className="btn btn-primary otp-primary-button" disabled={busy || !phone.trim()} style={{ marginTop: 14, width: '100%' }}>
             <MessageSquare size={17} /> {busy ? t.sending : t.send}
           </button>
         </form>
       ) : (
         <form onSubmit={handleVerify}>
-          <p style={{ margin: '0 0 14px', color: '#0f172a', fontWeight: 700 }}>{t.sentTo} {request.masked_phone}</p>
-          <label htmlFor="otp-code" style={{ display: 'block', color: '#0f172a', fontWeight: 700, marginBottom: 6 }}>{t.code}</label>
+          <p className="otp-destination" style={{ margin: '0 0 14px', color: '#0f172a', fontWeight: 700 }}>{t.sentTo} {request.masked_phone}</p>
+          <label className="otp-label" htmlFor="otp-code" style={{ display: 'block', color: '#0f172a', fontWeight: 700, marginBottom: 6 }}>{t.code}</label>
           <input
             id="otp-code"
             type="text"
@@ -179,23 +180,24 @@ export function PhoneVerify({ sessionId, language = 'en', onVerified, onError })
             value={code}
             onChange={(event) => setCode(event.target.value.replace(/\D/g, '').slice(0, request.code_length || 6))}
             placeholder={t.codeHint}
+            className="otp-input otp-code-input"
             style={{ width: '100%', padding: '12px 14px', borderRadius: 12, border: '1px solid #94a3b8', color: '#0f172a', fontSize: 22, letterSpacing: 6, textAlign: 'center', boxSizing: 'border-box' }}
           />
-          <button type="submit" className="btn btn-primary" disabled={busy || code.length !== (request.code_length || 6)} style={{ marginTop: 14, width: '100%' }}>
+          <button type="submit" className="btn btn-primary otp-primary-button" disabled={busy || code.length !== (request.code_length || 6)} style={{ marginTop: 14, width: '100%' }}>
             <ShieldCheck size={17} /> {busy ? t.checking : t.verify}
           </button>
           <div style={{ display: 'flex', justifyContent: 'space-between', gap: 12, marginTop: 14, alignItems: 'center' }}>
-            <button type="button" className="btn btn-ghost btn-sm" onClick={() => { setRequest(null); setError(''); setCode(''); }}>
+            <button type="button" className="btn btn-ghost btn-sm otp-secondary-button" onClick={() => { setRequest(null); setError(''); setCode(''); }}>
               {t.change}
             </button>
-            <button type="button" className="btn btn-ghost btn-sm" disabled={busy || resendIn > 0} onClick={handleSend}>
+            <button type="button" className="btn btn-ghost btn-sm otp-secondary-button" disabled={busy || resendIn > 0} onClick={handleSend}>
               <RefreshCw size={15} /> {resendIn > 0 ? `${t.wait} ${resendIn}${t.seconds}` : t.resend}
             </button>
           </div>
         </form>
       )}
 
-      {error && <p role="alert" aria-live="polite" style={{ margin: '14px 0 0', color: '#b91c1c', fontWeight: 700 }}>{error}</p>}
+      {error && <p className="otp-error" role="alert" aria-live="polite" style={{ margin: '14px 0 0', color: '#b91c1c', fontWeight: 700 }}>{error}</p>}
     </section>
   );
 }

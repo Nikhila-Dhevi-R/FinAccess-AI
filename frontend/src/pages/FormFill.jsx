@@ -18,6 +18,7 @@ import { useSpeech } from '../hooks/useSpeech';
 import { useSession } from '../hooks/useSession';
 import {
   uploadForm,
+  createSession,
   getNextField,
   skipFormField,
   submitFieldAnswer,
@@ -217,7 +218,7 @@ function isNegative(text) {
 }
 
 export default function FormFill() {
-  const { sessionId, language, startSession } = useSession();
+  const { language } = useSession();
   const lang = language === 'hi' || language === 'ta' ? language : 'en';
   const t = UI_STRINGS[lang];
 
@@ -227,7 +228,7 @@ export default function FormFill() {
   // challenge remains in place after every three fields and before final submission.
   // Phases: starting | verify-phone | upload | processing | asking | confirming | field-challenge | final-challenge | done
   const [phase, setPhase] = useState('starting');
-  const [activeSessionId, setActiveSessionId] = useState(sessionId);
+  const [activeSessionId, setActiveSessionId] = useState(null);
   const [mfaVerified, setMfaVerified] = useState(false);
   const [formId, setFormId] = useState(null);
   const [fields, setFields] = useState([]);
@@ -242,34 +243,41 @@ export default function FormFill() {
   const [finalNonce, setFinalNonce] = useState(null);
   const [customAnswer, setCustomAnswer] = useState('');
   const fileRef = useRef();
+  const enrollmentRequest = useRef(null);
 
-  const effectiveSession = activeSessionId || sessionId;
+  const effectiveSession = activeSessionId;
   const confirmedCount = fields.filter((f) => f.status === 'confirmed').length;
 
   useEffect(() => {
-    let cancelled = false;
-    const prepareEnrollment = async () => {
-      try {
-        let sid = sessionId;
-        if (!sid) {
-          const created = await startSession(lang);
-          sid = created.id;
-        }
-        if (cancelled) return;
-        setActiveSessionId(sid);
+    let active = true;
+    // A form-fill visit gets a fresh session. Keeping the promise in a ref
+    // makes React StrictMode's development remount reuse the same request
+    // instead of canceling initialization and leaving a blank page.
+    if (!enrollmentRequest.current) {
+      enrollmentRequest.current = (async () => {
+        const created = await createSession(lang);
+        const sid = created.id;
         const status = await getOtpStatus(sid);
-        if (cancelled) return;
+        return { sid, status };
+      })();
+    }
+
+    const request = enrollmentRequest.current;
+    request
+      .then(({ sid, status }) => {
+        if (!active) return;
+        setActiveSessionId(sid);
         setMfaVerified(Boolean(status?.verified));
         setPhase(status?.verified ? 'upload' : 'verify-phone');
-      } catch (e) {
-        if (cancelled) return;
+      })
+      .catch((e) => {
+        if (!active) return;
         setError(e?.response?.data?.detail?.message || e.message || 'Could not start the form session.');
         setPhase('verify-phone');
-      }
-    };
-    prepareEnrollment();
-    return () => { cancelled = true; };
-  }, [sessionId, lang]);
+      });
+
+    return () => { active = false; };
+  }, [lang]);
 
   // ── Fetch next field ──────────────────────────────────────────────
   const fetchNextField = useCallback(

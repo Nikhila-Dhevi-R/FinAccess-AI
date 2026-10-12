@@ -10,7 +10,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 
 from config import get_settings
-from database import engine, Base
+from database import engine, Base, ensure_schema
 from routers import sessions, forms, confirmations, schemes, guidance, fraud, auth
 
 settings = get_settings()
@@ -21,6 +21,7 @@ async def lifespan(app: FastAPI):
     """Create all database tables on startup."""
     os.makedirs(settings.UPLOAD_DIR, exist_ok=True)
     Base.metadata.create_all(bind=engine)
+    ensure_schema(engine)
     print(f"[OK] FinAccess AI backend started - DB: {settings.DATABASE_URL}")
     yield
     print("[INFO] FinAccess AI backend shutting down")

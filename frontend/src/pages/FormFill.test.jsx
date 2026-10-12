@@ -1,8 +1,9 @@
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import { StrictMode } from 'react';
 import { beforeEach, describe, expect, test, vi } from 'vitest';
 import FormFill from './FormFill';
-import { getOtpStatus, uploadForm, getNextField, submitFieldAnswer } from '../api/client';
+import { createSession, getOtpStatus, uploadForm, getNextField, submitFieldAnswer } from '../api/client';
 import { useSession } from '../hooks/useSession';
 
 vi.mock('../hooks/useSession', () => ({ useSession: vi.fn() }));
@@ -35,6 +36,7 @@ vi.mock('../components/PhoneVerify', () => ({
 }));
 
 vi.mock('../api/client', () => ({
+  createSession: vi.fn(),
   getOtpStatus: vi.fn(),
   uploadForm: vi.fn(),
   getNextField: vi.fn(),
@@ -44,7 +46,6 @@ vi.mock('../api/client', () => ({
   finalizeForm: vi.fn(),
   resolveBackendUrl: vi.fn((path) => path),
   fetchDemoTemplate: vi.fn(),
-  createSession: vi.fn(),
 }));
 
 const fields = [
@@ -61,9 +62,26 @@ beforeEach(() => {
     startSession: vi.fn().mockResolvedValue({ id: 'session-1' }),
   });
   getOtpStatus.mockResolvedValue({ session_id: 'session-1', verified: false, masked_phone: null });
+  createSession.mockResolvedValue({ id: 'session-1' });
 });
 
 describe('FormFill SMS gate', () => {
+  test('starts a fresh session so a page refresh requires phone verification again', async () => {
+    useSession.mockReturnValue({
+      sessionId: 'previously-verified-session',
+      language: 'en',
+      startSession: vi.fn(),
+    });
+    createSession.mockResolvedValue({ id: 'fresh-session' });
+    getOtpStatus.mockResolvedValue({ session_id: 'fresh-session', verified: false, masked_phone: null });
+
+    render(<StrictMode><FormFill /></StrictMode>);
+
+    expect(await screen.findByTestId('phone-verify')).toBeInTheDocument();
+    expect(createSession).toHaveBeenCalledWith('en');
+    expect(getOtpStatus).toHaveBeenCalledWith('fresh-session');
+  });
+
   test('shows phone verification before any form-upload controls for an unverified session', async () => {
     render(<FormFill />);
 
