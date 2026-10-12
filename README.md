@@ -1,6 +1,6 @@
 # FinAccess AI
 
-FinAccess AI is a voice first financial inclusion platform for people in India who may face difficulty reading, typing, completing official forms, understanding government schemes, or identifying financial fraud. The application combines a multilingual browser experience with a FastAPI service for form processing, scheme discovery, financial guidance, and fraud analysis.
+FinAccess AI is a ## voice first financial inclusion platform for people in India who may face difficulty reading, typing, completing official forms, understanding government schemes, or identifying financial fraud. The application combines a multilingual browser experience with a FastAPI service for form processing, scheme discovery, financial guidance, and fraud analysis.
 
 The primary experience supports English, Hindi, and Tamil. Users can speak to the application through the browser microphone or enter text when speech input is unavailable.
 
@@ -24,7 +24,8 @@ Financial scams create a related problem. A suspicious message, image, link, or 
 
 ## System architecture
 
-[![FinAccess AI system architecture](docs/system-architecture.png)](https://gitdiagram.com/nikhila-dhevi-r/finaccess-ai?utm_source=readme&utm_medium=picture)
+<img width="11769" height="9935" alt="diagram (1)" src="https://github.com/user-attachments/assets/5999fc55-0b01-4974-a2c6-abe0ee9f47a7" />
+
 
 The system is organized into the following layers.
 
