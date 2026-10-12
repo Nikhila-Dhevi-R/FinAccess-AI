@@ -11,6 +11,36 @@ export const api = axios.create({
   timeout: 30000,
 });
 
+export const AUTH_TOKEN_KEY = 'finaccess_auth_token';
+
+api.interceptors.request.use((config) => {
+  try {
+    const token = sessionStorage.getItem(AUTH_TOKEN_KEY);
+    if (token) {
+      config.headers = config.headers || {};
+      config.headers.Authorization = `Bearer ${token}`;
+    }
+  } catch {
+    // Storage may be unavailable in private browsing; the request can still proceed.
+  }
+  return config;
+});
+
+// ── Account authentication ──────────────────────────────────────────────────
+export const signupAccount = ({ username, email, mpin, mpinConfirmation }) =>
+  api.post('/auth/signup', {
+    username,
+    email,
+    mpin,
+    mpin_confirmation: mpinConfirmation,
+  }).then(r => r.data);
+
+export const loginAccount = ({ username, mpin }) =>
+  api.post('/auth/login', { username, mpin }).then(r => r.data);
+
+export const getCurrentAccount = () =>
+  api.get('/auth/me').then(r => r.data);
+
 // ── Sessions ──────────────────────────────────────────────────────────
 export const createSession = (language = 'en', phone = null) =>
   api.post('/sessions', { preferred_language: language, user_phone: phone }).then(r => r.data);
