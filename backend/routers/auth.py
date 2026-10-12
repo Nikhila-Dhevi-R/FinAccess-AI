@@ -5,12 +5,48 @@ from sqlalchemy.orm import Session as DBSession
 
 from config import get_settings
 from database import get_db
-from models import PhoneOtp, UserSession
-from schemas import MfaStatusResponse, OtpSendRequest, OtpSendResponse, OtpVerifyRequest
+from models import PhoneOtp, User, UserSession
+from schemas import (
+    AccountLoginRequest,
+    AccountResponse,
+    AccountSignupRequest,
+    AuthTokenResponse,
+    MfaStatusResponse,
+    OtpSendRequest,
+    OtpSendResponse,
+    OtpVerifyRequest,
+)
+from services.account_auth import AccountAuthError, authenticate_account, create_access_token, create_account, get_current_user
 from services import otp_service
 
 
 router = APIRouter(prefix="/auth", tags=["auth"])
+
+
+def _raise_account_error(error: AccountAuthError) -> None:
+    raise HTTPException(status_code=error.status_code, detail={"code": error.code, "message": error.message})
+
+
+@router.post("/signup", response_model=AccountResponse, status_code=201)
+def signup(data: AccountSignupRequest, db: DBSession = Depends(get_db)):
+    try:
+        return create_account(db, data.username, data.email, data.mpin, data.mpin_confirmation)
+    except AccountAuthError as error:
+        _raise_account_error(error)
+
+
+@router.post("/login", response_model=AuthTokenResponse)
+def login(data: AccountLoginRequest, db: DBSession = Depends(get_db)):
+    try:
+        user = authenticate_account(db, data.username, data.mpin)
+    except AccountAuthError as error:
+        _raise_account_error(error)
+    return AuthTokenResponse(access_token=create_access_token(user), user=user)
+
+
+@router.get("/me", response_model=AccountResponse)
+def me(user: User = Depends(get_current_user)):
+    return user
 
 
 def _raise_error(error: otp_service.OtpError) -> None:
