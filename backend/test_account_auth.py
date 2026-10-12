@@ -1,5 +1,9 @@
 """Account model and authentication contract tests."""
 
+from datetime import datetime, timedelta, timezone
+
+from jose import jwt
+
 from models import User
 from config import get_settings
 
@@ -118,3 +122,29 @@ def test_login_rejects_wrong_mpin_and_me_rejects_tampered_token(client):
         headers={"Authorization": "Bearer invalid.token.value"},
     )
     assert tampered.status_code == 401
+
+
+def test_me_rejects_expired_token(client, db_session):
+    signup = client.post(
+        "/api/v1/auth/signup",
+        json={
+            "username": "expired_user",
+            "email": "expired@example.com",
+            "mpin": "456789",
+            "mpin_confirmation": "456789",
+        },
+    )
+    assert signup.status_code == 201
+    user = db_session.query(User).filter_by(username="expired_user").one()
+    expired = jwt.encode(
+        {
+            "sub": user.id,
+            "exp": datetime.now(timezone.utc) - timedelta(minutes=1),
+        },
+        get_settings().SECRET_KEY,
+        algorithm="HS256",
+    )
+
+    response = client.get("/api/v1/auth/me", headers={"Authorization": f"Bearer {expired}"})
+    assert response.status_code == 401
+    assert response.json()["detail"]["code"] == "invalid_token"
