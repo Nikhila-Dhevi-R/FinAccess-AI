@@ -26,6 +26,16 @@ api.interceptors.request.use((config) => {
   return config;
 });
 
+api.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    if (error?.response?.status === 401 && typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent('finaccess:auth-expired'));
+    }
+    return Promise.reject(error);
+  },
+);
+
 // ── Account authentication ──────────────────────────────────────────────────
 export const signupAccount = ({ username, email, mpin, mpinConfirmation }) =>
   api.post('/auth/signup', {

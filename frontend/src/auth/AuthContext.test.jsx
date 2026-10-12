@@ -88,4 +88,20 @@ describe('AuthProvider', () => {
     expect(screen.getByTestId('authenticated')).toHaveTextContent('false');
     expect(sessionStorage.getItem('finaccess_auth_token')).toBeNull();
   });
+
+  test('clears a mounted session when an API request reports 401', async () => {
+    const account = { id: 'user-4', username: 'active_user', email: 'active@example.com' };
+    sessionStorage.setItem('finaccess_auth_token', 'expired-token');
+    sessionStorage.setItem('finaccess_session_id', 'session-4');
+    getCurrentAccount.mockResolvedValue(account);
+
+    render(<AuthProvider><Probe /></AuthProvider>);
+    await waitFor(() => expect(screen.getByTestId('authenticated')).toHaveTextContent('true'));
+
+    window.dispatchEvent(new CustomEvent('finaccess:auth-expired'));
+
+    await waitFor(() => expect(screen.getByTestId('authenticated')).toHaveTextContent('false'));
+    expect(sessionStorage.getItem('finaccess_auth_token')).toBeNull();
+    expect(sessionStorage.getItem('finaccess_session_id')).toBeNull();
+  });
 });

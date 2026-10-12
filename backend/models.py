@@ -74,8 +74,8 @@ class User(Base):
 
     id = Column(String, primary_key=True, default=gen_uuid)
     # Account identity fields are optional for legacy phone-only records.
-    username = Column(String, nullable=True, index=True)
-    email = Column(String, nullable=True, index=True)
+    username = Column(String, nullable=True, unique=True, index=True)
+    email = Column(String, nullable=True, unique=True, index=True)
     mpin_hash = Column(String, nullable=True)
     # Optional contact/profile data used by the separate form-fill OTP flow.
     phone = Column(String, unique=True, nullable=True)

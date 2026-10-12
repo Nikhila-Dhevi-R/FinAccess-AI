@@ -1,10 +1,12 @@
 from functools import lru_cache
 from pathlib import Path
 
+from pydantic import model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
 BACKEND_DIR = Path(__file__).resolve().parent
+DEFAULT_SECRET_KEY = "finaccess-dev-secret-change-in-production"
 
 
 class Settings(BaseSettings):
@@ -17,7 +19,7 @@ class Settings(BaseSettings):
     DATABASE_URL: str = f"sqlite:///{(BACKEND_DIR / 'finaccess.db').as_posix()}"
 
     # Security for randomized voice/text confirmation challenges
-    SECRET_KEY: str = "finaccess-dev-secret-change-in-production"
+    SECRET_KEY: str = DEFAULT_SECRET_KEY
     NONCE_EXPIRY_SECONDS: int = 30
     AUTH_TOKEN_EXPIRE_MINUTES: int = 720
 
@@ -63,6 +65,12 @@ class Settings(BaseSettings):
     ]
 
     model_config = SettingsConfigDict(env_file=BACKEND_DIR / ".env", extra="ignore")
+
+    @model_validator(mode="after")
+    def require_production_secret(self):
+        if not self.DEBUG and self.SECRET_KEY == DEFAULT_SECRET_KEY:
+            raise ValueError("SECRET_KEY must be set to a non-default value when DEBUG is false")
+        return self
 
 
 @lru_cache()

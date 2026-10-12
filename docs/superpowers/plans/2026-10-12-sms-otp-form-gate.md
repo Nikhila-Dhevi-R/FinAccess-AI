@@ -319,4 +319,3 @@
   ```
 
   If `.env.example` has no changes after Task 1, skip this commit. Never stage `backend/.env`.
-

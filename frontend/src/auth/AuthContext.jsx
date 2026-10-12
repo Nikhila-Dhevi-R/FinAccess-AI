@@ -67,6 +67,20 @@ export function AuthProvider({ children }) {
     return () => { active = false; };
   }, []);
 
+  useEffect(() => {
+    const handleExpiredSession = () => {
+      writeStorage(AUTH_TOKEN_KEY, null);
+      writeStorage(USER_KEY, null);
+      writeStorage(APP_SESSION_KEY, null);
+      setToken(null);
+      setUser(null);
+      setError('Your login session expired. Please log in again.');
+    };
+
+    window.addEventListener('finaccess:auth-expired', handleExpiredSession);
+    return () => window.removeEventListener('finaccess:auth-expired', handleExpiredSession);
+  }, []);
+
   const signup = async (credentials) => {
     setError('');
     try {

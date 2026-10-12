@@ -107,6 +107,18 @@ def ensure_schema(bind_engine=None):
                 connection.execute(text(f"ALTER TABLE users ADD COLUMN {name} {column_type}"))
         connection.execute(text("CREATE INDEX IF NOT EXISTS ix_users_username ON users (username)"))
         connection.execute(text("CREATE INDEX IF NOT EXISTS ix_users_email ON users (email)"))
+        connection.execute(
+            text(
+                "CREATE UNIQUE INDEX IF NOT EXISTS ux_users_username_account "
+                "ON users (username) WHERE username IS NOT NULL"
+            )
+        )
+        connection.execute(
+            text(
+                "CREATE UNIQUE INDEX IF NOT EXISTS ux_users_email_account "
+                "ON users (email) WHERE email IS NOT NULL"
+            )
+        )
 
 
 def get_db():

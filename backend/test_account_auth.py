@@ -2,10 +2,11 @@
 
 from datetime import datetime, timedelta, timezone
 
+import pytest
 from jose import jwt
 
 from models import User
-from config import get_settings
+from config import Settings, get_settings
 
 
 def test_user_supports_account_identity_fields(db_session):
@@ -76,6 +77,18 @@ def test_signup_rejects_case_insensitive_duplicate_username_and_email(client):
     )
     assert duplicate.status_code == 409
     assert duplicate.json()["detail"]["code"] == "username_taken"
+
+    duplicate_email = client.post(
+        "/api/v1/auth/signup",
+        json={
+            "username": "other_duplicate",
+            "email": "DUPLICATE@example.com",
+            "mpin": "654321",
+            "mpin_confirmation": "654321",
+        },
+    )
+    assert duplicate_email.status_code == 409
+    assert duplicate_email.json()["detail"]["code"] == "email_taken"
 
 
 def test_login_returns_token_and_me_returns_safe_account(client):
@@ -148,3 +161,27 @@ def test_me_rejects_expired_token(client, db_session):
     response = client.get("/api/v1/auth/me", headers={"Authorization": f"Bearer {expired}"})
     assert response.status_code == 401
     assert response.json()["detail"]["code"] == "invalid_token"
+
+
+def test_me_rejects_signed_token_without_expiry(client, db_session):
+    signup = client.post(
+        "/api/v1/auth/signup",
+        json={
+            "username": "missing_exp_user",
+            "email": "missing.exp@example.com",
+            "mpin": "567890",
+            "mpin_confirmation": "567890",
+        },
+    )
+    assert signup.status_code == 201
+    user = db_session.query(User).filter_by(username="missing_exp_user").one()
+    token = jwt.encode({"sub": user.id}, get_settings().SECRET_KEY, algorithm="HS256")
+
+    response = client.get("/api/v1/auth/me", headers={"Authorization": f"Bearer {token}"})
+    assert response.status_code == 401
+    assert response.json()["detail"]["code"] == "invalid_token"
+
+
+def test_production_settings_reject_default_secret():
+    with pytest.raises(ValueError, match="SECRET_KEY"):
+        Settings(_env_file=None, DEBUG=False)

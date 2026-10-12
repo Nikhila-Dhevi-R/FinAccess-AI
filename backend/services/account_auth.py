@@ -9,6 +9,7 @@ from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from jose import JWTError, jwt
 from passlib.context import CryptContext
 from sqlalchemy import func
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session as DBSession
 
 from config import get_settings
@@ -84,7 +85,15 @@ def create_account(
         mpin_hash=hash_mpin(mpin),
     )
     db.add(user)
-    db.commit()
+    try:
+        db.commit()
+    except IntegrityError:
+        db.rollback()
+        if db.query(User).filter(func.lower(User.username) == normalized_username).first():
+            raise AccountAuthError("username_taken", "That username is already registered.", 409)
+        if db.query(User).filter(func.lower(User.email) == normalized_email).first():
+            raise AccountAuthError("email_taken", "That email is already registered.", 409)
+        raise AccountAuthError("account_conflict", "That account could not be created. Please try again.", 409)
     db.refresh(user)
     return user
 
@@ -122,7 +131,7 @@ def get_current_user(
     try:
         payload = jwt.decode(credentials.credentials, settings.SECRET_KEY, algorithms=["HS256"])
         user_id = payload.get("sub")
-        if not user_id:
+        if not user_id or "exp" not in payload:
             raise JWTError("missing subject")
     except (JWTError, ValueError):
         raise _auth_failure()
