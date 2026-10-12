@@ -2043,6 +2043,10 @@ select:focus-visible {
 .auth-input::placeholder {
   color: #627d98 !important;
   opacity: 1;
+  font-family: inherit;
+  font-size: 15px;
+  font-weight: 500;
+  letter-spacing: normal;
 }
 
 .auth-input:focus {
