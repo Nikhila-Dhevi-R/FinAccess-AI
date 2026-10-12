@@ -1,16 +1,27 @@
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import { BrowserRouter as Router, Navigate, Route, Routes, useLocation } from 'react-router-dom';
 import { Navbar } from './components/Navbar';
 import { FloatingVoiceBot } from './components/FloatingVoiceBot';
 import { SiteFooter } from './components/SiteFooter';
+import { AuthProvider } from './auth/AuthContext';
+import { useAuth } from './hooks/useAuth';
+import { AuthLoadingScreen } from './components/AuthLoadingScreen';
+import AuthPage from './pages/AuthPage';
 import Landing from './pages/Landing';
 import FormFill from './pages/FormFill';
 import Schemes from './pages/Schemes';
 import Guidance from './pages/Guidance';
 import FraudCheck from './pages/FraudCheck';
 
-export default function App() {
+function AuthEntry() {
+  const { loading, isAuthenticated } = useAuth();
+  if (loading) return <AuthLoadingScreen />;
+  if (isAuthenticated) return <Navigate to="/" replace />;
+  return <AuthPage />;
+}
+
+function AppShell() {
   return (
-    <Router>
+    <>
       <Navbar />
       <main className="main-content">
         <Routes>
@@ -26,6 +37,27 @@ export default function App() {
       <FloatingVoiceBot />
 
       <SiteFooter />
-    </Router>
+    </>
+  );
+}
+
+function ProtectedShell() {
+  const { loading, isAuthenticated } = useAuth();
+  const location = useLocation();
+  if (loading) return <AuthLoadingScreen />;
+  if (!isAuthenticated) return <Navigate to="/auth" replace state={{ from: location }} />;
+  return <AppShell />;
+}
+
+export default function App() {
+  return (
+    <AuthProvider>
+      <Router>
+        <Routes>
+          <Route path="/auth" element={<AuthEntry />} />
+          <Route path="*" element={<ProtectedShell />} />
+        </Routes>
+      </Router>
+    </AuthProvider>
   );
 }

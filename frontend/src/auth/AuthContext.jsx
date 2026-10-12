@@ -1,10 +1,9 @@
-import { createContext, useContext, useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { AUTH_TOKEN_KEY, getCurrentAccount, loginAccount, signupAccount } from '../api/client';
+import { AuthContext } from './context';
 
 const USER_KEY = 'finaccess_auth_user';
 const APP_SESSION_KEY = 'finaccess_session_id';
-
-const AuthContext = createContext(null);
 
 function readStorage(key, fallback = null) {
   try {
@@ -37,14 +36,13 @@ export function AuthProvider({ children }) {
       return null;
     }
   });
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(() => Boolean(readStorage(AUTH_TOKEN_KEY)));
   const [error, setError] = useState('');
 
   useEffect(() => {
     let active = true;
     const existingToken = readStorage(AUTH_TOKEN_KEY);
     if (!existingToken) {
-      setLoading(false);
       return () => { active = false; };
     }
 
@@ -120,10 +118,4 @@ export function AuthProvider({ children }) {
   }), [user, token, loading, error]);
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
-}
-
-export function useAuthContext() {
-  const context = useContext(AuthContext);
-  if (!context) throw new Error('useAuth must be used inside AuthProvider');
-  return context;
 }

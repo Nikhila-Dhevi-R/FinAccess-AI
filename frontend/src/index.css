@@ -2098,6 +2098,43 @@ select:focus-visible {
   text-decoration: underline;
 }
 
+.auth-logout-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 34px;
+  padding: 7px 11px;
+  border: 1px solid rgba(186, 230, 253, 0.45);
+  border-radius: 999px;
+  color: #e0f2fe;
+  background: rgba(255, 255, 255, 0.1);
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.auth-logout-button:hover {
+  border-color: #7dd3fc;
+  color: #ffffff;
+  background: rgba(56, 189, 248, 0.2);
+}
+
+.auth-loading {
+  min-height: calc(100vh - 110px);
+  display: grid;
+  place-items: center;
+  padding: 32px;
+}
+
+.auth-loading-card {
+  padding: 18px 24px;
+  border: 1px solid rgba(255, 255, 255, 0.84);
+  border-radius: 16px;
+  color: #102a43;
+  background: rgba(255, 255, 255, 0.9);
+  box-shadow: 0 15px 32px rgba(2, 24, 61, 0.22);
+  font-weight: 800;
+}
+
 @media (max-width: 560px) {
   .auth-page {
     padding: 32px 14px 52px;
