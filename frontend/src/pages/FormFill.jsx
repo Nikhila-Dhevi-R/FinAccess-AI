@@ -224,9 +224,9 @@ export default function FormFill() {
 
   const { speak, listen, stopListening, isListening, isSpeaking, stopSpeaking, transcript, setTranscript, error: speechError, clearError: clearSpeechError } = useSpeech(lang);
 
-  // The SMS gate runs once before the first upload. The four-digit anti-spoofing
-  // challenge remains in place after every three fields and before final submission.
-  // Phases: starting | verify-phone | upload | processing | asking | confirming | field-challenge | final-challenge | done
+  // The SMS gate runs once before the first upload. The randomized phrase
+  // challenge runs once at the end, immediately before final submission.
+  // Phases: starting | verify-phone | upload | processing | asking | confirming | final-challenge | done
   const [phase, setPhase] = useState('starting');
   const [activeSessionId, setActiveSessionId] = useState(null);
   const [mfaVerified, setMfaVerified] = useState(false);
@@ -494,25 +494,8 @@ export default function FormFill() {
       return;
     }
 
-    const fieldIndex = fields.findIndex((field) => field.id === currentField.id);
-    const questionNumber = fieldIndex >= 0 ? fieldIndex + 1 : progress.completed + 1;
-
-    // Let the user answer three questions in a row. The 4-digit challenge is
-    // shown only at the end of each three-question batch.
-    if (questionNumber % 3 !== 0) {
-      completeFieldAndContinue();
-      return;
-    }
-
-    if (!answerData.nonce_id || !answerData.challenge_digits) {
-      setError('Could not start the security challenge. Please submit this answer again.');
-      return;
-    }
-    setError('');
-    setPhase('field-challenge');
-  }, [currentField, answerData, fields, progress.completed, completeFieldAndContinue]);
-
-  const handleFieldNonceConfirmed = completeFieldAndContinue;
+    completeFieldAndContinue();
+  }, [currentField, answerData, completeFieldAndContinue]);
 
   // ── Red ✗ Reject/Retry Button Action ──────────────────────────────
   const handleRejectField = useCallback(() => {
@@ -593,7 +576,7 @@ export default function FormFill() {
   const startFinalChallenge = startVoiceChallenge;
 
   const handleFinalNonceConfirmed = () => handleFinalize();
-  const securityStep = phase === 'field-challenge' || phase === 'final-challenge';
+  const securityStep = phase === 'final-challenge';
 
   return (
     <div className="container" style={{ paddingBottom: 60, maxWidth: 960, margin: '0 auto' }}>
@@ -773,7 +756,7 @@ export default function FormFill() {
       )}
 
       {/* Active Form Fill Phases */}
-      {['asking', 'confirming', 'field-challenge', 'final-challenge', 'done'].includes(phase) && (
+      {['asking', 'confirming', 'final-challenge', 'done'].includes(phase) && (
         <div
           className="form-fill-layout"
           style={{ display: 'grid', gap: 24 }}
@@ -1122,39 +1105,6 @@ export default function FormFill() {
                       </button>
                     </div>
                   </div>
-                </motion.div>
-              ) : phase === 'field-challenge' && answerData ? (
-                <motion.div
-                  key={`field-challenge-${answerData.nonce_id}`}
-                  initial={{ opacity: 0, y: 15 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: -15 }}
-                  style={{ width: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center' }}
-                >
-                  <div className="badge badge-teal" style={{ marginBottom: 12, fontSize: 13, padding: '5px 14px' }}>
-                    {t.fieldOf} {Math.max(1, fields.findIndex((f) => f.id === currentField?.id) + 1)} / {fields.length || progress.total} — {currentField?.label_local || currentField?.label}
-                  </div>
-                  <h2 style={{ fontSize: 24, fontWeight: 800, color: '#0f172a', marginBottom: 6 }}>
-                    {lang === 'hi' ? 'आगे बढ़ने के लिए 4 अंक दोहराएँ' : lang === 'ta' ? 'தொடர 4 எண்களை மீண்டும் கூறுங்கள்' : 'Repeat the 4 numbers to continue'}
-                  </h2>
-                  <p style={{ color: '#64748b', fontSize: 15, maxWidth: 500, margin: '0 auto 20px' }}>
-                    {lang === 'hi' ? 'अगले सवाल से पहले 30 सेकंड में बोलें या टाइप करें।' : lang === 'ta' ? 'அடுத்த கேள்விக்கு முன் 30 விநாடிகளில் கூறவும் அல்லது தட்டச்சு செய்யவும்.' : 'Say or type the 4 digits within 30 seconds to continue.'}
-                  </p>
-                  <ChallengePrompt
-                    nonce={answerData}
-                    sessionId={effectiveSession}
-                    language={lang}
-                    onSuccess={handleFieldNonceConfirmed}
-                    onFailure={() => speak(t.cantHear)}
-                  />
-                  <button
-                    type="button"
-                    className="btn btn-ghost"
-                    style={{ marginTop: 20, fontSize: 13, padding: '8px 18px', borderRadius: 20 }}
-                    onClick={handleRejectField}
-                  >
-                    <ArrowLeft size={14} /> {t.confirmNo}
-                  </button>
                 </motion.div>
               ) : phase === 'final-challenge' && finalNonce ? (
                 /* Final replay-resistant four-digit challenge before submission */

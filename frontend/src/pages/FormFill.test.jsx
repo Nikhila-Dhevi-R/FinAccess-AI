@@ -3,7 +3,7 @@ import userEvent from '@testing-library/user-event';
 import { StrictMode } from 'react';
 import { beforeEach, describe, expect, test, vi } from 'vitest';
 import FormFill from './FormFill';
-import { createSession, getOtpStatus, uploadForm, getNextField, submitFieldAnswer } from '../api/client';
+import { createSession, getOtpStatus, uploadForm, getNextField, submitFieldAnswer, createChallenge } from '../api/client';
 import { useSession } from '../hooks/useSession';
 
 vi.mock('../hooks/useSession', () => ({ useSession: vi.fn() }));
@@ -99,16 +99,23 @@ describe('FormFill SMS gate', () => {
     expect(screen.queryByTestId('phone-verify')).not.toBeInTheDocument();
   });
 
-  test('keeps the randomized phrase challenge after upload and field answer', async () => {
+  test('shows the randomized phrase challenge only before final submission', async () => {
     const user = userEvent.setup();
     getOtpStatus.mockResolvedValue({ session_id: 'session-1', verified: true, masked_phone: '+91 XXXXXX3218' });
     uploadForm.mockResolvedValue({ form_id: 'form-1', fields, total_fields: 3 });
-    getNextField.mockResolvedValue({
-      field: { ...fields[2], status: 'asked' },
-      progress: { completed: 0, total: 3, percentage: 0 },
-      question_audio_text: fields[2].question_text,
-      is_complete: false,
-    });
+    getNextField
+      .mockResolvedValueOnce({
+        field: { ...fields[2], status: 'asked' },
+        progress: { completed: 0, total: 3, percentage: 0 },
+        question_audio_text: fields[2].question_text,
+        is_complete: false,
+      })
+      .mockResolvedValueOnce({
+        field: null,
+        progress: { completed: 3, total: 3, percentage: 100 },
+        question_audio_text: 'All questions complete',
+        is_complete: true,
+      });
     submitFieldAnswer.mockResolvedValue({
       validation_passed: true,
       interpreted_value: 'Ram Kumar',
@@ -116,6 +123,12 @@ describe('FormFill SMS gate', () => {
       nonce_id: 'nonce-1',
       challenge_digits: '1 2 3 4',
       challenge_phrase: 'one two three four',
+    });
+    createChallenge.mockResolvedValue({
+      nonce_id: 'final-nonce-1',
+      challenge_digits: '5 6 7 8',
+      challenge_phrase: 'five six seven eight',
+      challenge_audio_text: 'To confirm, please say the 4 digits: 5, 6, 7, 8',
     });
 
     render(<FormFill />);
@@ -131,6 +144,11 @@ describe('FormFill SMS gate', () => {
     const confirmButton = screen.getAllByRole('button').find((button) => /correct/i.test(button.textContent));
     await user.click(confirmButton);
 
+    expect(screen.queryByTestId('randomized-challenge')).not.toBeInTheDocument();
+    expect(await screen.findByText(/form review/i, {}, { timeout: 2500 })).toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', { name: /authorize.*generate pdf/i }));
+    expect(createChallenge).toHaveBeenCalledWith('session-1', 'submit_form', 'form-1');
     expect(await screen.findByTestId('randomized-challenge')).toBeInTheDocument();
     expect(screen.queryByTestId('phone-verify')).not.toBeInTheDocument();
     expect(screen.queryByText(/otpconfirmationmodal/i)).not.toBeInTheDocument();
