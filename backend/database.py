@@ -82,15 +82,31 @@ def ensure_schema(bind_engine=None):
         return
 
     inspector = inspect(target_engine)
-    if "phone_otps" not in inspector.get_table_names():
+    table_names = set(inspector.get_table_names())
+
+    if "phone_otps" in table_names:
+        columns = {column["name"] for column in inspector.get_columns("phone_otps")}
+        if "code_hash" in columns:
+            _rebuild_legacy_phone_otps(target_engine, columns)
+        elif "verification_sid" not in columns:
+            with target_engine.begin() as connection:
+                connection.execute(text("ALTER TABLE phone_otps ADD COLUMN verification_sid VARCHAR"))
+
+    if "users" not in table_names:
         return
 
-    columns = {column["name"] for column in inspector.get_columns("phone_otps")}
-    if "code_hash" in columns:
-        _rebuild_legacy_phone_otps(target_engine, columns)
-    elif "verification_sid" not in columns:
-        with target_engine.begin() as connection:
-            connection.execute(text("ALTER TABLE phone_otps ADD COLUMN verification_sid VARCHAR"))
+    user_columns = {column["name"] for column in inspect(target_engine).get_columns("users")}
+    additions = {
+        "username": "VARCHAR",
+        "email": "VARCHAR",
+        "mpin_hash": "VARCHAR",
+    }
+    with target_engine.begin() as connection:
+        for name, column_type in additions.items():
+            if name not in user_columns:
+                connection.execute(text(f"ALTER TABLE users ADD COLUMN {name} {column_type}"))
+        connection.execute(text("CREATE INDEX IF NOT EXISTS ix_users_username ON users (username)"))
+        connection.execute(text("CREATE INDEX IF NOT EXISTS ix_users_email ON users (email)"))
 
 
 def get_db():

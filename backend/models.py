@@ -73,7 +73,11 @@ class User(Base):
     __tablename__ = "users"
 
     id = Column(String, primary_key=True, default=gen_uuid)
-    # Optional contact/profile data; it is not used for access verification.
+    # Account identity fields are optional for legacy phone-only records.
+    username = Column(String, nullable=True, index=True)
+    email = Column(String, nullable=True, index=True)
+    mpin_hash = Column(String, nullable=True)
+    # Optional contact/profile data used by the separate form-fill OTP flow.
     phone = Column(String, unique=True, nullable=True)
     preferred_language = Column(String, default="en")
     profile_attributes = Column(JSON, default=dict)

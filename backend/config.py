@@ -19,6 +19,7 @@ class Settings(BaseSettings):
     # Security for randomized voice/text confirmation challenges
     SECRET_KEY: str = "finaccess-dev-secret-change-in-production"
     NONCE_EXPIRY_SECONDS: int = 30
+    AUTH_TOKEN_EXPIRE_MINUTES: int = 720
 
     # Session SMS verification gate
     MFA_REQUIRED: bool = False
