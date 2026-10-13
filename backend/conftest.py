@@ -13,6 +13,7 @@ from fastapi.testclient import TestClient
 
 from main import app
 from database import Base, get_db
+from config import get_settings
 
 TEST_DATABASE_URL = "sqlite:///:memory:"
 engine = create_engine(
@@ -28,6 +29,17 @@ def setup_database():
     Base.metadata.create_all(bind=engine)
     yield
     Base.metadata.drop_all(bind=engine)
+
+
+@pytest.fixture(autouse=True)
+def disable_mfa_for_legacy_tests():
+    """Keep existing endpoint tests focused while gate tests opt into MFA."""
+
+    settings = get_settings()
+    previous = settings.MFA_REQUIRED
+    settings.MFA_REQUIRED = False
+    yield
+    settings.MFA_REQUIRED = previous
 
 
 def override_get_db():

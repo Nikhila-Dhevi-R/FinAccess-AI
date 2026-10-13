@@ -11,6 +11,46 @@ export const api = axios.create({
   timeout: 30000,
 });
 
+export const AUTH_TOKEN_KEY = 'finaccess_auth_token';
+
+api.interceptors.request.use((config) => {
+  try {
+    const token = sessionStorage.getItem(AUTH_TOKEN_KEY);
+    if (token) {
+      config.headers = config.headers || {};
+      config.headers.Authorization = `Bearer ${token}`;
+    }
+  } catch {
+    // Storage may be unavailable in private browsing; the request can still proceed.
+  }
+  return config;
+});
+
+api.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    if (error?.response?.status === 401 && typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent('finaccess:auth-expired'));
+    }
+    return Promise.reject(error);
+  },
+);
+
+// ── Account authentication ──────────────────────────────────────────────────
+export const signupAccount = ({ username, email, mpin, mpinConfirmation }) =>
+  api.post('/auth/signup', {
+    username,
+    email,
+    mpin,
+    mpin_confirmation: mpinConfirmation,
+  }).then(r => r.data);
+
+export const loginAccount = ({ username, mpin }) =>
+  api.post('/auth/login', { username, mpin }).then(r => r.data);
+
+export const getCurrentAccount = () =>
+  api.get('/auth/me').then(r => r.data);
+
 // ── Sessions ──────────────────────────────────────────────────────────
 export const createSession = (language = 'en', phone = null) =>
   api.post('/sessions', { preferred_language: language, user_phone: phone }).then(r => r.data);
@@ -20,6 +60,16 @@ export const getSession = (id) =>
 
 export const updateLanguage = (sessionId, language) =>
   api.patch(`/sessions/${sessionId}/language`, null, { params: { language } }).then(r => r.data);
+
+// ── Session SMS verification ───────────────────────────────────────────────
+export const sendOtp = (sessionId, phone, language = 'en') =>
+  api.post('/auth/otp/send', { session_id: sessionId, phone, language }).then(r => r.data);
+
+export const verifyOtp = (sessionId, otpId, code) =>
+  api.post('/auth/otp/verify', { session_id: sessionId, otp_id: otpId, code }).then(r => r.data);
+
+export const getOtpStatus = (sessionId) =>
+  api.get(`/auth/status/${sessionId}`).then(r => r.data);
 
 // ── Forms ─────────────────────────────────────────────────────────────
 export const uploadForm = (sessionId, file, language) => {

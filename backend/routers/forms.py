@@ -17,7 +17,7 @@ from schemas import (
     FieldAnswerRequest, FieldAnswerResponse, FormFinalizeResponse,
     FieldPosition
 )
-from services import ocr_service, voice_service, pdf_service
+from services import ocr_service, voice_service, pdf_service, otp_service
 from services.form_language import translate_label, localized_question, form_value
 from services.nonce_service import create_nonce, build_challenge_audio_text
 from config import get_settings
@@ -55,6 +55,14 @@ async def upload_form(
 ):
     """Upload a form image/PDF and extract structured field schema via OCR."""
     session = db.query(UserSession).filter(UserSession.id == session_id).first()
+    if settings.MFA_REQUIRED and not otp_service.is_session_verified(session):
+        raise HTTPException(
+            status_code=403,
+            detail={
+                "code": "form_auth_required",
+                "message": "Verify your phone before uploading a form.",
+            },
+        )
     if not session:
         # Gracefully auto-create session so uploads never fail if user hasn't visited landing first
         new_sid = session_id if session_id and session_id != "demo-session" else str(uuid.uuid4())

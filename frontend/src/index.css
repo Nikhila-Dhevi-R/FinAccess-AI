@@ -1755,6 +1755,77 @@ select:focus-visible {
   box-shadow: 0 20px 42px rgba(0, 12, 30, 0.34), 0 0 0 1px rgba(var(--action-accent-rgb), 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.3) !important;
 }
 
+/* Phone verification: keep the glass effect while giving the authentication card a light, readable surface. */
+.otp-verification-panel.otp-card {
+  background:
+    linear-gradient(135deg, rgba(255, 255, 255, 0.96), rgba(241, 248, 255, 0.88)) !important;
+  border: 1px solid rgba(255, 255, 255, 0.92) !important;
+  box-shadow: 0 20px 46px rgba(2, 24, 61, 0.28), inset 0 1px 0 rgba(255, 255, 255, 0.86) !important;
+  backdrop-filter: blur(20px) saturate(125%);
+  -webkit-backdrop-filter: blur(20px) saturate(125%);
+}
+
+.otp-verification-panel.otp-card:hover {
+  border-color: rgba(186, 230, 253, 0.98) !important;
+  box-shadow: 0 24px 54px rgba(2, 24, 61, 0.32), inset 0 1px 0 rgba(255, 255, 255, 0.92) !important;
+}
+
+.otp-verification-panel .otp-title,
+.otp-verification-panel .otp-label,
+.otp-verification-panel .otp-destination {
+  color: #102a43 !important;
+}
+
+.otp-verification-panel .otp-subtitle {
+  color: #334e68 !important;
+}
+
+.otp-verification-panel .otp-input {
+  background: rgba(255, 255, 255, 0.94) !important;
+  color: #102a43 !important;
+  border-color: #b8c7d9 !important;
+  box-shadow: inset 0 1px 2px rgba(15, 42, 67, 0.08);
+}
+
+.otp-verification-panel .otp-input::placeholder {
+  color: #627d98 !important;
+  opacity: 1;
+}
+
+.otp-verification-panel .otp-input:focus {
+  background: #ffffff !important;
+  color: #102a43 !important;
+  border-color: #0284c7 !important;
+  box-shadow: 0 0 0 4px rgba(14, 165, 233, 0.2), inset 0 1px 2px rgba(15, 42, 67, 0.08) !important;
+}
+
+.otp-verification-panel .otp-primary-button {
+  color: #ffffff !important;
+  text-shadow: 0 1px 1px rgba(2, 24, 61, 0.28);
+}
+
+.otp-verification-panel .otp-secondary-button {
+  background: rgba(226, 239, 250, 0.9) !important;
+  border-color: #a9bfd4 !important;
+  color: #102a43 !important;
+  box-shadow: 0 4px 12px rgba(2, 24, 61, 0.12) !important;
+}
+
+.otp-verification-panel .otp-secondary-button:hover:not(:disabled) {
+  background: #ffffff !important;
+  border-color: #0284c7 !important;
+  color: #075985 !important;
+}
+
+.otp-verification-panel .otp-secondary-button:disabled {
+  color: #526b84 !important;
+  opacity: 0.78;
+}
+
+.otp-verification-panel .otp-error {
+  color: #b42318 !important;
+}
+
 .action-card > div:first-child {
   background: var(--action-accent) !important;
   color: #061a35 !important;
@@ -1817,6 +1888,277 @@ select:focus-visible {
   background: #ffffff !important;
   border-color: #38bdf8 !important;
   color: #061a35 !important;
+}
+
+/* Account gate: a light, readable glass card that sits above the existing navy app canvas. */
+.auth-page {
+  min-height: calc(100vh - 110px);
+  display: grid;
+  place-items: center;
+  padding: 56px 24px 72px;
+  position: relative;
+}
+
+.auth-card {
+  width: min(100%, 500px);
+  position: relative;
+  overflow: hidden;
+  padding: 34px;
+  border: 1px solid rgba(255, 255, 255, 0.92);
+  border-radius: 28px;
+  background: linear-gradient(145deg, rgba(255, 255, 255, 0.97), rgba(235, 245, 255, 0.9));
+  box-shadow: 0 26px 62px rgba(2, 24, 61, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.94);
+  backdrop-filter: blur(22px) saturate(130%);
+  -webkit-backdrop-filter: blur(22px) saturate(130%);
+}
+
+.auth-card-glow {
+  position: absolute;
+  width: 220px;
+  height: 220px;
+  right: -96px;
+  top: -112px;
+  border-radius: 50%;
+  background: rgba(56, 189, 248, 0.2);
+  filter: blur(8px);
+  pointer-events: none;
+}
+
+.auth-card-header,
+.auth-copy,
+.auth-mode-switch,
+.auth-form,
+.auth-footer-copy {
+  position: relative;
+  z-index: 1;
+}
+
+.auth-card-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.auth-brand-mark {
+  display: grid;
+  place-items: center;
+  width: 48px;
+  height: 48px;
+  border-radius: 16px;
+  color: #ffffff;
+  background: linear-gradient(135deg, #1d4ed8, #0284c7);
+  box-shadow: 0 9px 20px rgba(2, 132, 199, 0.26);
+}
+
+.auth-eyebrow {
+  color: #102a43;
+  font-size: 16px;
+  font-weight: 900;
+  letter-spacing: 0.01em;
+}
+
+.auth-kicker {
+  margin-top: 2px;
+  color: #627d98;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.auth-copy {
+  margin: 28px 0 22px;
+}
+
+.auth-copy h1 {
+  color: #102a43;
+  font-size: clamp(26px, 4vw, 34px);
+  line-height: 1.18;
+  letter-spacing: -0.03em;
+}
+
+.auth-copy p {
+  margin-top: 9px;
+  color: #486581;
+  line-height: 1.55;
+}
+
+.auth-mode-switch {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 5px;
+  padding: 5px;
+  margin-bottom: 22px;
+  border: 1px solid #c7d7e8;
+  border-radius: 15px;
+  background: rgba(226, 239, 250, 0.78);
+}
+
+.auth-mode-switch button {
+  min-height: 42px;
+  border: 0;
+  border-radius: 11px;
+  color: #486581;
+  background: transparent;
+  font-size: 14px;
+  font-weight: 800;
+}
+
+.auth-mode-switch button.is-active {
+  color: #ffffff;
+  background: linear-gradient(135deg, #1d4ed8, #0284c7);
+  box-shadow: 0 5px 13px rgba(2, 132, 199, 0.25);
+}
+
+.auth-form {
+  display: grid;
+  gap: 8px;
+}
+
+.auth-label {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  margin-top: 6px;
+  color: #102a43;
+  font-size: 14px;
+  font-weight: 800;
+}
+
+.auth-label svg {
+  color: #0284c7;
+}
+
+.auth-input {
+  width: 100%;
+  min-height: 50px;
+  padding: 12px 14px;
+  border: 1px solid #b8c7d9 !important;
+  border-radius: 13px;
+  color: #102a43 !important;
+  background: rgba(255, 255, 255, 0.96) !important;
+  font-size: 16px;
+  outline: none;
+  box-shadow: inset 0 1px 2px rgba(15, 42, 67, 0.08);
+}
+
+.auth-input::placeholder {
+  color: #627d98 !important;
+  opacity: 1;
+  font-family: inherit;
+  font-size: 15px;
+  font-weight: 500;
+  letter-spacing: normal;
+}
+
+.auth-input:focus {
+  color: #102a43 !important;
+  background: rgba(255, 255, 255, 0.99) !important;
+  border-color: #0284c7 !important;
+  box-shadow: 0 0 0 4px rgba(14, 165, 233, 0.18), inset 0 1px 2px rgba(15, 42, 67, 0.08);
+}
+
+.auth-input:-webkit-autofill,
+.auth-input:-webkit-autofill:hover,
+.auth-input:-webkit-autofill:focus,
+.auth-input:-webkit-autofill:active {
+  -webkit-text-fill-color: #102a43 !important;
+  -webkit-box-shadow: 0 0 0 1000px rgba(255, 255, 255, 0.99) inset, inset 0 1px 2px rgba(15, 42, 67, 0.08) !important;
+  caret-color: #102a43;
+}
+
+.auth-mpin-input {
+  letter-spacing: 0.42em;
+  font-weight: 800;
+}
+
+.auth-message {
+  margin: 8px 0 0;
+  font-size: 14px;
+  font-weight: 800;
+  line-height: 1.45;
+}
+
+.auth-message-error {
+  color: #b42318;
+}
+
+.auth-message-success {
+  color: #137333;
+}
+
+.auth-primary-button {
+  width: 100%;
+  min-height: 52px;
+  margin-top: 10px;
+  color: #ffffff !important;
+  text-shadow: 0 1px 1px rgba(2, 24, 61, 0.28);
+}
+
+.auth-footer-copy {
+  margin-top: 22px;
+  color: #486581;
+  font-size: 14px;
+  text-align: center;
+}
+
+.auth-link-button {
+  padding: 0;
+  border: 0;
+  color: #075985;
+  background: transparent;
+  font-weight: 900;
+}
+
+.auth-link-button:hover {
+  color: #0369a1;
+  text-decoration: underline;
+}
+
+.auth-logout-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 34px;
+  padding: 7px 11px;
+  border: 1px solid rgba(186, 230, 253, 0.45);
+  border-radius: 999px;
+  color: #e0f2fe;
+  background: rgba(255, 255, 255, 0.1);
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.auth-logout-button:hover {
+  border-color: #7dd3fc;
+  color: #ffffff;
+  background: rgba(56, 189, 248, 0.2);
+}
+
+.auth-loading {
+  min-height: calc(100vh - 110px);
+  display: grid;
+  place-items: center;
+  padding: 32px;
+}
+
+.auth-loading-card {
+  padding: 18px 24px;
+  border: 1px solid rgba(255, 255, 255, 0.84);
+  border-radius: 16px;
+  color: #102a43;
+  background: rgba(255, 255, 255, 0.9);
+  box-shadow: 0 15px 32px rgba(2, 24, 61, 0.22);
+  font-weight: 800;
+}
+
+@media (max-width: 560px) {
+  .auth-page {
+    padding: 32px 14px 52px;
+  }
+
+  .auth-card {
+    padding: 26px 20px;
+    border-radius: 22px;
+  }
 }
 
 /* Keep the popular-question labels readable on their translucent navy chips. */

@@ -13,10 +13,12 @@ import {
 } from 'lucide-react';
 import { VoiceButton } from '../components/VoiceButton';
 import { ChallengePrompt } from '../components/ChallengePrompt';
+import { PhoneVerify } from '../components/PhoneVerify';
 import { useSpeech } from '../hooks/useSpeech';
 import { useSession } from '../hooks/useSession';
 import {
   uploadForm,
+  createSession,
   getNextField,
   skipFormField,
   submitFieldAnswer,
@@ -24,6 +26,7 @@ import {
   resolveBackendUrl,
   createChallenge,
   fetchDemoTemplate,
+  getOtpStatus,
 } from '../api/client';
 
 const UI_STRINGS = {
@@ -215,17 +218,18 @@ function isNegative(text) {
 }
 
 export default function FormFill() {
-  const { sessionId, language, startSession } = useSession();
+  const { language } = useSession();
   const lang = language === 'hi' || language === 'ta' ? language : 'en';
   const t = UI_STRINGS[lang];
 
   const { speak, listen, stopListening, isListening, isSpeaking, stopSpeaking, transcript, setTranscript, error: speechError, clearError: clearSpeechError } = useSpeech(lang);
 
-  // The four-digit anti-spoofing challenge is used after every three fields
-  // and before final submission. No phone or OTP gate is used for form entry.
-  // Phases: starting | upload | processing | asking | confirming | field-challenge | final-challenge | done
+  // The SMS gate runs once before the first upload. The randomized phrase
+  // challenge runs once at the end, immediately before final submission.
+  // Phases: starting | verify-phone | upload | processing | asking | confirming | final-challenge | done
   const [phase, setPhase] = useState('starting');
-  const [activeSessionId, setActiveSessionId] = useState(sessionId);
+  const [activeSessionId, setActiveSessionId] = useState(null);
+  const [mfaVerified, setMfaVerified] = useState(false);
   const [formId, setFormId] = useState(null);
   const [fields, setFields] = useState([]);
   const [currentField, setCurrentField] = useState(null);
@@ -239,32 +243,41 @@ export default function FormFill() {
   const [finalNonce, setFinalNonce] = useState(null);
   const [customAnswer, setCustomAnswer] = useState('');
   const fileRef = useRef();
+  const enrollmentRequest = useRef(null);
 
-  const effectiveSession = activeSessionId || sessionId;
+  const effectiveSession = activeSessionId;
   const confirmedCount = fields.filter((f) => f.status === 'confirmed').length;
 
   useEffect(() => {
-    let cancelled = false;
-    const prepareEnrollment = async () => {
-      try {
-        let sid = sessionId;
-        if (!sid) {
-          const created = await startSession(lang);
-          sid = created.id;
-        }
-        if (cancelled) return;
+    let active = true;
+    // A form-fill visit gets a fresh session. Keeping the promise in a ref
+    // makes React StrictMode's development remount reuse the same request
+    // instead of canceling initialization and leaving a blank page.
+    if (!enrollmentRequest.current) {
+      enrollmentRequest.current = (async () => {
+        const created = await createSession(lang);
+        const sid = created.id;
+        const status = await getOtpStatus(sid);
+        return { sid, status };
+      })();
+    }
+
+    const request = enrollmentRequest.current;
+    request
+      .then(({ sid, status }) => {
+        if (!active) return;
         setActiveSessionId(sid);
-        // Form filling starts directly after the session is ready.
-        setPhase('upload');
-      } catch (e) {
-        if (cancelled) return;
+        setMfaVerified(Boolean(status?.verified));
+        setPhase(status?.verified ? 'upload' : 'verify-phone');
+      })
+      .catch((e) => {
+        if (!active) return;
         setError(e?.response?.data?.detail?.message || e.message || 'Could not start the form session.');
-        setPhase('upload');
-      }
-    };
-    prepareEnrollment();
-    return () => { cancelled = true; };
-  }, [sessionId, lang]);
+        setPhase('verify-phone');
+      });
+
+    return () => { active = false; };
+  }, [lang]);
 
   // ── Fetch next field ──────────────────────────────────────────────
   const fetchNextField = useCallback(
@@ -331,6 +344,11 @@ export default function FormFill() {
   const handleFile = useCallback(
     async (file) => {
       if (!file) return;
+      if (!mfaVerified) {
+        setError('Verify your phone before uploading a form.');
+        setPhase('verify-phone');
+        return;
+      }
       setPhase('processing');
       setError('');
       try {
@@ -351,12 +369,13 @@ export default function FormFill() {
         setTimeout(() => fetchNextField(result.form_id), 1800);
       } catch (e) {
         console.error('Upload error:', e);
-        const detail = e.response?.data?.detail || e.message;
-        setError(`Could not upload form (${detail || 'server error'}). Please check backend.`);
+        const detail = e.response?.data?.detail;
+        const message = typeof detail === 'object' ? detail.message : detail;
+        setError(`Could not upload form (${message || e.message || 'server error'}). Please check backend.`);
         setPhase('upload');
       }
     },
-    [effectiveSession, lang, speak, fetchNextField]
+    [effectiveSession, lang, mfaVerified, speak, fetchNextField]
   );
 
   // ── Listen and submit answer ──────────────────────────────────────
@@ -475,25 +494,8 @@ export default function FormFill() {
       return;
     }
 
-    const fieldIndex = fields.findIndex((field) => field.id === currentField.id);
-    const questionNumber = fieldIndex >= 0 ? fieldIndex + 1 : progress.completed + 1;
-
-    // Let the user answer three questions in a row. The 4-digit challenge is
-    // shown only at the end of each three-question batch.
-    if (questionNumber % 3 !== 0) {
-      completeFieldAndContinue();
-      return;
-    }
-
-    if (!answerData.nonce_id || !answerData.challenge_digits) {
-      setError('Could not start the security challenge. Please submit this answer again.');
-      return;
-    }
-    setError('');
-    setPhase('field-challenge');
-  }, [currentField, answerData, fields, progress.completed, completeFieldAndContinue]);
-
-  const handleFieldNonceConfirmed = completeFieldAndContinue;
+    completeFieldAndContinue();
+  }, [currentField, answerData, completeFieldAndContinue]);
 
   // ── Red ✗ Reject/Retry Button Action ──────────────────────────────
   const handleRejectField = useCallback(() => {
@@ -574,7 +576,7 @@ export default function FormFill() {
   const startFinalChallenge = startVoiceChallenge;
 
   const handleFinalNonceConfirmed = () => handleFinalize();
-  const securityStep = phase === 'field-challenge' || phase === 'final-challenge';
+  const securityStep = phase === 'final-challenge';
 
   return (
     <div className="container" style={{ paddingBottom: 60, maxWidth: 960, margin: '0 auto' }}>
@@ -609,6 +611,23 @@ export default function FormFill() {
         >
           ⚠ {error}
         </div>
+      )}
+
+      {/* One-time SMS verification gate before the first form upload */}
+      {phase === 'verify-phone' && effectiveSession && (
+        <PhoneVerify
+          sessionId={effectiveSession}
+          language={lang}
+          onVerified={() => {
+            setMfaVerified(true);
+            setError('');
+            setPhase('upload');
+          }}
+          onError={(e) => {
+            const detail = e?.response?.data?.detail;
+            setError(typeof detail === 'object' ? detail.message : detail || e?.message || 'Phone verification failed.');
+          }}
+        />
       )}
 
       {/* Upload Phase */}
@@ -737,7 +756,7 @@ export default function FormFill() {
       )}
 
       {/* Active Form Fill Phases */}
-      {['asking', 'confirming', 'field-challenge', 'final-challenge', 'done'].includes(phase) && (
+      {['asking', 'confirming', 'final-challenge', 'done'].includes(phase) && (
         <div
           className="form-fill-layout"
           style={{ display: 'grid', gap: 24 }}
@@ -1086,39 +1105,6 @@ export default function FormFill() {
                       </button>
                     </div>
                   </div>
-                </motion.div>
-              ) : phase === 'field-challenge' && answerData ? (
-                <motion.div
-                  key={`field-challenge-${answerData.nonce_id}`}
-                  initial={{ opacity: 0, y: 15 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: -15 }}
-                  style={{ width: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center' }}
-                >
-                  <div className="badge badge-teal" style={{ marginBottom: 12, fontSize: 13, padding: '5px 14px' }}>
-                    {t.fieldOf} {Math.max(1, fields.findIndex((f) => f.id === currentField?.id) + 1)} / {fields.length || progress.total} — {currentField?.label_local || currentField?.label}
-                  </div>
-                  <h2 style={{ fontSize: 24, fontWeight: 800, color: '#0f172a', marginBottom: 6 }}>
-                    {lang === 'hi' ? 'आगे बढ़ने के लिए 4 अंक दोहराएँ' : lang === 'ta' ? 'தொடர 4 எண்களை மீண்டும் கூறுங்கள்' : 'Repeat the 4 numbers to continue'}
-                  </h2>
-                  <p style={{ color: '#64748b', fontSize: 15, maxWidth: 500, margin: '0 auto 20px' }}>
-                    {lang === 'hi' ? 'अगले सवाल से पहले 30 सेकंड में बोलें या टाइप करें।' : lang === 'ta' ? 'அடுத்த கேள்விக்கு முன் 30 விநாடிகளில் கூறவும் அல்லது தட்டச்சு செய்யவும்.' : 'Say or type the 4 digits within 30 seconds to continue.'}
-                  </p>
-                  <ChallengePrompt
-                    nonce={answerData}
-                    sessionId={effectiveSession}
-                    language={lang}
-                    onSuccess={handleFieldNonceConfirmed}
-                    onFailure={() => speak(t.cantHear)}
-                  />
-                  <button
-                    type="button"
-                    className="btn btn-ghost"
-                    style={{ marginTop: 20, fontSize: 13, padding: '8px 18px', borderRadius: 20 }}
-                    onClick={handleRejectField}
-                  >
-                    <ArrowLeft size={14} /> {t.confirmNo}
-                  </button>
                 </motion.div>
               ) : phase === 'final-challenge' && finalNonce ? (
                 /* Final replay-resistant four-digit challenge before submission */

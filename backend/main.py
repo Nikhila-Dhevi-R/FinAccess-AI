@@ -10,8 +10,8 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 
 from config import get_settings
-from database import engine, Base
-from routers import sessions, forms, confirmations, schemes, guidance, fraud
+from database import engine, Base, ensure_schema
+from routers import sessions, forms, confirmations, schemes, guidance, fraud, auth
 
 settings = get_settings()
 
@@ -21,6 +21,7 @@ async def lifespan(app: FastAPI):
     """Create all database tables on startup."""
     os.makedirs(settings.UPLOAD_DIR, exist_ok=True)
     Base.metadata.create_all(bind=engine)
+    ensure_schema(engine)
     print(f"[OK] FinAccess AI backend started - DB: {settings.DATABASE_URL}")
     yield
     print("[INFO] FinAccess AI backend shutting down")
@@ -50,6 +51,7 @@ v1_router.include_router(confirmations.router)
 v1_router.include_router(schemes.router)
 v1_router.include_router(guidance.router)
 v1_router.include_router(fraud.router)
+v1_router.include_router(auth.router)
 app.include_router(v1_router)
 
 # ─── Root backward-compatibility routers ─────────────────────────────────────
@@ -59,6 +61,7 @@ app.include_router(confirmations.router)
 app.include_router(schemes.router)
 app.include_router(guidance.router)
 app.include_router(fraud.router)
+app.include_router(auth.router)
 
 # ─── Static files (uploads) ──────────────────────────────────────────────────
 if os.path.exists(settings.UPLOAD_DIR):

@@ -47,6 +47,10 @@ class BoundAction(str, enum.Enum):
     CONFIRM_SCHEME_APPLICATION = "confirm_scheme_application"
 
 
+class OtpChannel(str, enum.Enum):
+    SMS = "sms"
+
+
 class EventType(str, enum.Enum):
     SESSION_CREATED = "session_created"
     FORM_UPLOADED = "form_uploaded"
@@ -60,13 +64,20 @@ class EventType(str, enum.Enum):
     SCHEME_MATCHED = "scheme_matched"
     FRAUD_CHECKED = "fraud_checked"
     GUIDANCE_ASKED = "guidance_asked"
+    OTP_SENT = "otp_sent"
+    OTP_VERIFIED = "otp_verified"
+    OTP_REJECTED = "otp_rejected"
 
 
 class User(Base):
     __tablename__ = "users"
 
     id = Column(String, primary_key=True, default=gen_uuid)
-    # Optional contact/profile data; it is not used for access verification.
+    # Account identity fields are optional for legacy phone-only records.
+    username = Column(String, nullable=True, unique=True, index=True)
+    email = Column(String, nullable=True, unique=True, index=True)
+    mpin_hash = Column(String, nullable=True)
+    # Optional contact/profile data used by the separate form-fill OTP flow.
     phone = Column(String, unique=True, nullable=True)
     preferred_language = Column(String, default="en")
     profile_attributes = Column(JSON, default=dict)
@@ -97,6 +108,26 @@ class UserSession(Base):
     forms = relationship("Form", back_populates="session")
     nonces = relationship("ConfirmationNonce", back_populates="session")
     audit_logs = relationship("AuditLog", back_populates="session")
+    phone_otps = relationship("PhoneOtp", back_populates="session")
+
+
+class PhoneOtp(Base):
+    """Session-bound Twilio Verify request; the OTP itself is never stored."""
+
+    __tablename__ = "phone_otps"
+
+    id = Column(String, primary_key=True, default=gen_uuid)
+    session_id = Column(String, ForeignKey("user_sessions.id"), nullable=False)
+    phone = Column(String, nullable=False, index=True)
+    verification_sid = Column(String, nullable=False)
+    channel = Column(SAEnum(OtpChannel), nullable=False, default=OtpChannel.SMS)
+    issued_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
+    expires_at = Column(DateTime, nullable=False)
+    attempt_count = Column(Integer, default=0)
+    consumed = Column(Boolean, default=False)
+    consumed_at = Column(DateTime, nullable=True)
+
+    session = relationship("UserSession", back_populates="phone_otps")
 
 
 class Form(Base):

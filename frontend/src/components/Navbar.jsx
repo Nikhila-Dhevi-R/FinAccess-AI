@@ -1,6 +1,7 @@
 import { Link, useLocation } from 'react-router-dom';
-import { FileText, Landmark, MessageCircle, Shield, Home, Volume2, Globe } from 'lucide-react';
+import { FileText, Landmark, MessageCircle, Shield, Home, Volume2, Globe, LogOut } from 'lucide-react';
 import { useSession } from '../hooks/useSession';
+import { useAuth } from '../hooks/useAuth';
 import { useSpeech } from '../hooks/useSpeech';
 
 const NAV_ITEMS = [
@@ -35,6 +36,7 @@ const REPEAT_TEXTS = {
 export function Navbar() {
   const location = useLocation();
   const { language, changeLanguage } = useSession();
+  const { logout } = useAuth();
   const lang = language === 'hi' || language === 'ta' ? language : 'en';
   const { speak, isSpeaking, stopSpeaking } = useSpeech(lang);
 
@@ -170,6 +172,11 @@ export function Navbar() {
               </button>
             ))}
           </div>
+
+          <button type="button" className="auth-logout-button" onClick={logout} title="Log out">
+            <LogOut size={15} aria-hidden="true" />
+            <span>Log out</span>
+          </button>
         </div>
       </div>
     </nav>

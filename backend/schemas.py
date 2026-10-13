@@ -2,7 +2,7 @@
 Pydantic schemas for request/response validation
 """
 
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, Field
 from typing import Optional, Any
 from datetime import datetime
 from models import FormStatus, FieldStatus, BoundAction
@@ -22,6 +22,63 @@ class SessionResponse(BaseModel):
     current_workflow: Optional[str] = None
 
     model_config = {"from_attributes": True}
+
+
+# ── Session SMS verification ─────────────────────────────────────────────────
+
+class OtpSendRequest(BaseModel):
+    session_id: str
+    phone: str
+    language: str = "en"
+
+
+class OtpSendResponse(BaseModel):
+    otp_id: str
+    masked_phone: str
+    code_length: int
+    expires_in_seconds: int
+    resend_after_seconds: int
+
+
+class OtpVerifyRequest(BaseModel):
+    session_id: str
+    otp_id: str
+    code: str
+
+
+class MfaStatusResponse(BaseModel):
+    session_id: str
+    verified: bool
+    masked_phone: Optional[str] = None
+
+
+# ─── Account authentication ─────────────────────────────────────────────────
+
+class AccountSignupRequest(BaseModel):
+    username: str = Field(min_length=3, max_length=32)
+    email: str = Field(min_length=3, max_length=254)
+    mpin: str = Field(min_length=6, max_length=6)
+    mpin_confirmation: str = Field(min_length=6, max_length=6)
+
+
+class AccountLoginRequest(BaseModel):
+    username: str = Field(min_length=1, max_length=32)
+    mpin: str = Field(min_length=6, max_length=6)
+
+
+class AccountResponse(BaseModel):
+    id: str
+    username: str
+    email: str
+    created_at: datetime
+
+    model_config = {"from_attributes": True}
+
+
+class AuthTokenResponse(BaseModel):
+    access_token: str
+    token_type: str = "bearer"
+    user: AccountResponse
 
 
 # ─── Form ─────────────────────────────────────────────────────────────────────
