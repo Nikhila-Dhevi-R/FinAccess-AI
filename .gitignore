@@ -1,0 +1,25 @@
+.env
+**/.env
+!.env.example
+!**/.env.example
+
+# Local runtime state and generated artifacts
+.venv/
+.pytest_cache/
+__pycache__/
+*.py[cod]
+*.db
+*.db-*
+uploads/
+backend/uploads/
+frontend/node_modules/
+frontend/dist/
+*.pdf
+.superpowers/
+.vscode/
+PROJECT_HANDOFF_REPORT.md
+*.7z
+*.exe
+*.dll
+7z_extra_dir/
+
