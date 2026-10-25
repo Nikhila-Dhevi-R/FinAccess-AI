@@ -2,7 +2,7 @@ import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { StrictMode } from 'react';
 import { beforeEach, describe, expect, test, vi } from 'vitest';
-import FormFill from './FormFill';
+import FormFill, { navCommand } from './FormFill';
 import { createSession, getOtpStatus, uploadForm, getNextField, submitFieldAnswer, createChallenge } from '../api/client';
 import { useSession } from '../hooks/useSession';
 
@@ -152,5 +152,13 @@ describe('FormFill SMS gate', () => {
     expect(await screen.findByTestId('randomized-challenge')).toBeInTheDocument();
     expect(screen.queryByTestId('phone-verify')).not.toBeInTheDocument();
     expect(screen.queryByText(/otpconfirmationmodal/i)).not.toBeInTheDocument();
+  });
+});
+
+describe('FormFill voice navigation', () => {
+  test('does not treat the ordinary next command as an implicit skip', () => {
+    expect(navCommand('next')).toBe('next');
+    expect(navCommand('skip')).toBe('skip');
+    expect(navCommand('back')).toBe('back');
   });
 });

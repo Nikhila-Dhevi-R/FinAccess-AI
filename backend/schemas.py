@@ -183,7 +183,8 @@ class ConfirmationRespondResponse(BaseModel):
 class UserProfile(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
-    occupation: Optional[str] = None           # farmer | salaried | self_employed | unemployed | student | laborer
+    occupation: Optional[str] = None           # built-in occupation or user-entered custom category
+    category: Optional[str] = None             # farmer | laborer | self_employed | student | unemployed | other
     gender: Optional[str] = None               # male | female | other
     age: Optional[int] = None
     annual_income: Optional[float] = None

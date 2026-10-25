@@ -166,17 +166,25 @@ def localize_ministry(ministry: str, language: str) -> str:
     return MINISTRIES[ministry][0 if language == "hi" else 1]
 
 
+IMPORTED_SCHEME_TAGS = {
+    scheme["id"]: (scheme.get("audience_tags", []), scheme.get("need_tags", []))
+    for scheme in SCHEMES_CATALOGUE
+    if scheme.get("source") == "updated_data.csv"
+}
+
+
 def tags_for(scheme_id: str) -> tuple[list[str], list[str]]:
-    return SCHEME_TAGS.get(scheme_id, ([], []))
+    return SCHEME_TAGS.get(scheme_id, IMPORTED_SCHEME_TAGS.get(scheme_id, ([], [])))
 
 
 def filter_options(language: str = "en") -> dict:
     """Who-is-it-for and what-do-you-need options with labels in the language and scheme counts."""
     idx = LANG_INDEX.get(language, 0)
+    catalogue_tags = [*SCHEME_TAGS.values(), *IMPORTED_SCHEME_TAGS.values()]
 
     def options(table, position):
         return [{"id": key, "label": spec[idx], "icon": spec[3],
-                 "count": sum(1 for tags in SCHEME_TAGS.values() if key in tags[position])}
+                 "count": sum(1 for tags in catalogue_tags if key in tags[position])}
                 for key, spec in table.items()]
 
     return {"audiences": options(AUDIENCES, 0), "needs": options(NEEDS, 1)}
@@ -187,7 +195,12 @@ def _normalise(text: str) -> str:
 
 
 def _scheme_haystack(scheme: dict) -> str:
-    parts = [scheme["id"].replace("_", " "), scheme.get("short_name", ""), scheme.get("ministry", "")]
+    parts = [
+        scheme["id"].replace("_", " "),
+        scheme.get("short_name", ""),
+        scheme.get("ministry", ""),
+        scheme.get("search_text", ""),
+    ]
     for lang in ("en", "hi", "ta"):
         tr = scheme.get("translations", {}).get(lang, {})
         parts += [tr.get("name", ""), tr.get("benefit_summary", ""), tr.get("who_can_get", "")]

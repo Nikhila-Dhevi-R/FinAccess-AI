@@ -3,6 +3,7 @@ FinAccess AI — Government Scheme Matching & Catalog Service
 Deterministic rules engine with comprehensive 8-category multilingual catalogue.
 """
 
+import re
 from typing import Optional, Union
 from schemas import UserProfile, SchemeCard, SchemeGroupInfo
 from services.schemes_data import SCHEMES_CATALOGUE, SCHEME_GROUPS
@@ -53,8 +54,8 @@ def _format_scheme_card(raw_scheme: dict, language: str = "en", status: str = "m
         scheme_id=raw_scheme["id"],
         group_id=raw_scheme.get("group_id"),
         name=name,
-        short_name=raw_scheme.get("short_name"),
-        ministry=localize_ministry(raw_scheme.get("ministry"), lang),
+        short_name=trans.get("short_name") or raw_scheme.get("short_name"),
+        ministry=trans.get("ministry") or localize_ministry(raw_scheme.get("ministry"), lang),
         benefit_summary=benefit,
         eligibility_reason=reason or default_reason,
         who_can_get=who,
@@ -89,6 +90,108 @@ def get_scheme_by_id(scheme_id: str, language: str = "en") -> Optional[SchemeCar
     return None
 
 
+_UPLOADED_STOP_WORDS = {
+    "work", "worker", "person", "people", "individual", "individuals", "scheme", "schemes",
+    "government", "india", "governmental", "category", "other", "the", "and", "for", "with",
+}
+
+
+def _uploaded_profile_terms(profile: UserProfile) -> list[str]:
+    occupation = (profile.occupation or "").lower().strip()
+    aliases = {
+        "farmer": ["farmer", "farming", "agriculture", "agricultural", "kisan", "cultivator"],
+        "laborer": ["labour", "labor", "worker", "construction", "daily wage", "unorganised", "unorganized", "shramik", "mazdoor"],
+        "self_employed": ["business", "enterprise", "entrepreneur", "msme", "artisan", "vendor", "shopkeeper", "trader"],
+        "student": ["student", "scholarship", "education", "school", "college", "university"],
+        "unemployed": ["employment", "job", "jobs", "skill", "skills", "training", "worker"],
+    }
+    if occupation in aliases:
+        return aliases[occupation]
+    terms = [
+        term for term in re.findall(r"[a-z0-9]{3,}", occupation)
+        if term not in _UPLOADED_STOP_WORDS
+    ]
+    return list(dict.fromkeys([occupation, *terms])) if occupation else []
+
+
+def _uploaded_age_ranges(text: str) -> list[tuple[int, int]]:
+    ranges = []
+    patterns = (
+        r"\b(?:aged?|age group|between)\s*(\d{1,3})\s*(?:to|-|and)\s*(\d{1,3})\b",
+        r"\b(\d{1,3})\s*(?:to|-)\s*(\d{1,3})\s*(?:years?|yrs?)\b",
+    )
+    for pattern in patterns:
+        ranges.extend((int(low), int(high)) for low, high in re.findall(pattern, text, re.IGNORECASE))
+    return list(dict.fromkeys(ranges))
+
+
+def _evaluate_uploaded_scheme(
+    profile: UserProfile, scheme: dict, language: str = "en"
+) -> tuple[str, str, float, list[str]]:
+    """Match a CSV row using its text and the available profile answers."""
+    search_text = (scheme.get("search_text") or "").lower()
+    eligibility_text = (scheme.get("eligibility_text") or "").lower()
+    profile_terms = _uploaded_profile_terms(profile)
+    term_hits = [term for term in profile_terms if term and term in search_text]
+    generic_scheme = any(
+        phrase in search_text
+        for phrase in ("all citizens", "any citizen", "all residents", "any resident", "all individuals")
+    )
+    if not term_hits and not generic_scheme:
+        return "ineligible", "Category does not match scheme details", 0.0, []
+
+    reasons = []
+    missing = []
+    if term_hits:
+        reasons.append(f"Your category matches the scheme details ({term_hits[0]})")
+    elif generic_scheme:
+        reasons.append("This scheme is described for all citizens or residents")
+
+    female_only = any(term in eligibility_text for term in ("woman", "women", "female", "girl", "maternity", "pregnant", "widow"))
+    male_only = any(term in eligibility_text for term in ("man", "men", "male", "boy"))
+    if profile.gender == "male" and female_only:
+        return "ineligible", "Gender does not match scheme eligibility", 0.0, []
+    if profile.gender == "female" and male_only and not female_only:
+        return "ineligible", "Gender does not match scheme eligibility", 0.0, []
+    if female_only or male_only:
+        if profile.gender is None:
+            missing.append("Confirm your gender")
+        else:
+            reasons.append("Gender matches the eligibility text")
+
+    age_ranges = _uploaded_age_ranges(eligibility_text)
+    if age_ranges:
+        if profile.age is None:
+            missing.append("Confirm your age")
+        elif not any(low <= profile.age <= high for low, high in age_ranges):
+            return "ineligible", "Age does not match scheme eligibility", 0.0, []
+        else:
+            reasons.append(f"Age ({profile.age}) is within the stated range")
+
+    bank_required = any(term in eligibility_text for term in ("bank account", "savings account", "bank details", "passbook"))
+    if bank_required:
+        if profile.has_bank_account is False:
+            missing.append("Need to open or link a bank account")
+        elif profile.has_bank_account is None:
+            missing.append("Confirm whether you have a bank account")
+        else:
+            reasons.append("Bank-account requirement is confirmed")
+
+    ration_required = any(term in eligibility_text for term in ("ration card", "bpl", "nfsa", "priority household"))
+    if ration_required:
+        if profile.has_ration_card is False:
+            missing.append("Confirm eligibility without a ration card at the local office")
+        elif profile.has_ration_card is None:
+            missing.append("Confirm whether you have a ration card")
+        else:
+            reasons.append("Ration-card requirement is confirmed")
+
+    score = min((0.74 if term_hits else 0.60) + (0.08 if len(term_hits) > 1 else 0.0) + (0.05 if age_ranges else 0.0), 0.95)
+    if missing:
+        return "needs_more_info", ". ".join(reasons), min(score, 0.75), missing
+    return "matched", ". ".join(reasons), score, []
+
+
 def _evaluate_scheme_eligibility(
     profile: UserProfile, scheme: dict, language: str = "en"
 ) -> tuple[str, str, float, list[str]]:
@@ -104,6 +207,8 @@ def _evaluate_scheme_eligibility(
         status: "matched" | "needs_more_info" | "ineligible"
     """
     lang = language if language in ("en", "hi", "ta") else "en"
+    if scheme.get("source") == "updated_data.csv":
+        return _evaluate_uploaded_scheme(profile, scheme, language=lang)
     rules = scheme.get("eligibility_rules", {})
     reasons = []
     missing = []
@@ -129,6 +234,25 @@ def _evaluate_scheme_eligibility(
                 "hi": "कार्यालय में अपने व्यवसाय की पुष्टि करें",
                 "ta": "அலுவலகத்தில் தொழில் விவரத்தை உறுதிப்படுத்தவும்",
             }.get(lang, "Confirm occupation"))
+
+    # Optional category check used by uploaded catalogues for custom groups
+    # such as street vendors, artisans, domestic workers, or fishers.
+    if "category" in rules:
+        raw_categories = rules["category"]
+        if isinstance(raw_categories, str):
+            raw_categories = [raw_categories]
+        target_categories = [str(value).lower().strip() for value in raw_categories]
+        user_categories = [str(value).lower().strip() for value in (profile.category, profile.occupation) if value]
+        if not user_categories:
+            missing.append("Confirm your category")
+        elif not any(
+            user_value in target_categories
+            or any(target in user_value for target in target_categories)
+            for user_value in user_categories
+        ):
+            return "ineligible", "Category does not match scheme target", 0.0, []
+        else:
+            reasons.append("Category matches this scheme")
 
     # 2. Gender Check
     if "gender" in rules:
@@ -258,11 +382,12 @@ def match_schemes_categorized(profile: Union[UserProfile, dict], language: str =
     # Determine primary user target groups for prioritization
     user_occ = (profile.occupation or "").lower()
     is_farmer = "farm" in user_occ or "kisan" in user_occ
-    is_laborer = "labour" in user_occ or "worker" in user_occ or "unemployed" in user_occ or "mazdoor" in user_occ
+    is_laborer = any(word in user_occ for word in ("labour", "labor", "worker", "unemployed", "mazdoor"))
     is_student = "student" in user_occ or (profile.age is not None and profile.age <= 22 and profile.age >= 5)
     is_senior = profile.age is not None and profile.age >= 60
     is_female = (profile.gender or "").lower() == "female"
     is_business = "business" in user_occ or "self" in user_occ or "shop" in user_occ
+    is_custom_category = (profile.category or "").lower() == "other"
 
     for scheme in SCHEMES_CATALOGUE:
         status, reason, score, missing = _evaluate_scheme_eligibility(profile, scheme, language=lang)
@@ -284,6 +409,8 @@ def match_schemes_categorized(profile: Union[UserProfile, dict], language: str =
             group_boost += 0.30
         elif is_business and gid == "loans_and_business":
             group_boost += 0.30
+        if is_custom_category and scheme.get("source") == "updated_data.csv":
+            group_boost += 0.20
 
         final_score = min(score + group_boost, 1.0)
         card = _format_scheme_card(
@@ -300,9 +427,14 @@ def match_schemes_categorized(profile: Union[UserProfile, dict], language: str =
         elif status == "needs_more_info":
             needs_info.append(card)
 
-    # Sort descending by match score
-    matched.sort(key=lambda x: x.match_score, reverse=True)
-    needs_info.sort(key=lambda x: x.match_score, reverse=True)
+    # Sort descending by match score. For a typed custom category, prefer the
+    # uploaded catalogue because it contains the user's own category wording.
+    if is_custom_category:
+        matched.sort(key=lambda x: (0 if x.scheme_id.startswith("dataset-") else 1, -x.match_score))
+        needs_info.sort(key=lambda x: (0 if x.scheme_id.startswith("dataset-") else 1, -x.match_score))
+    else:
+        matched.sort(key=lambda x: x.match_score, reverse=True)
+        needs_info.sort(key=lambda x: x.match_score, reverse=True)
 
     return matched, needs_info
 

@@ -194,12 +194,14 @@ const NO_KEYWORDS = [
 
 // Spoken navigation while a question is being asked
 const BACK_WORDS = ['back', 'go back', 'previous', 'peeche', 'piche', 'pichla', 'wapas', 'पीछे', 'पिछला', 'वापस', 'பின்னால்', 'பின்செல்', 'முந்தைய', 'பின்'];
-const SKIP_WORDS = ['skip', 'skip it', 'next', 'chhodo', 'chodo', 'aage', 'छोड़ें', 'छोड़ो', 'छोड़ दो', 'अगला', 'आगे', 'தவிர்', 'தவிர்க்க', 'அடுத்து', 'அடுத்தது'];
+const SKIP_WORDS = ['skip', 'skip it', 'chhodo', 'chodo', 'aage', 'छोड़ें', 'छोड़ो', 'छोड़ दो', 'अगला', 'आगे', 'தவிர்', 'தவிர்க்க', 'அடுத்து', 'அடுத்தது'];
+const NEXT_WORDS = ['next', 'next question'];
 
-function navCommand(text) {
+export function navCommand(text) {
   const clean = (text || '').toLowerCase().replace(/[.,!?।]/g, '').trim();
   if (BACK_WORDS.includes(clean)) return 'back';
   if (SKIP_WORDS.includes(clean)) return 'skip';
+  if (NEXT_WORDS.includes(clean)) return 'next';
   return null;
 }
 
@@ -401,6 +403,10 @@ export default function FormFill() {
       }
       if (command === 'skip') {
         skipCurrent();
+        return;
+      }
+      if (command === 'next') {
+        speak(t.cantHear);
         return;
       }
 

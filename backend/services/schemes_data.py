@@ -2121,3 +2121,9 @@ SCHEMES_CATALOGUE = [
         },
     },
 ]
+
+# The user-supplied CSV is normalized at import time and extends the curated
+# catalogue without changing the existing eight UI groups.
+from services.imported_schemes import IMPORTED_SCHEMES_CATALOGUE
+
+SCHEMES_CATALOGUE.extend(IMPORTED_SCHEMES_CATALOGUE)

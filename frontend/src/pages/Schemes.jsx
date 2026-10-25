@@ -25,6 +25,7 @@ import { useSpeech } from '../hooks/useSpeech';
 import { useSession } from '../hooks/useSession';
 import { fetchSchemeGroups, fetchSchemes, fetchSchemeFilters, matchSchemes } from '../api/client';
 import { playListenChime, playSuccessChime } from '../utils/audioCue';
+import { isCustomOccupation, normalizeOtherCategory, splitSchemeMatches } from './schemeHelpers';
 
 const UI_TEXT = {
   en: {
@@ -36,6 +37,10 @@ const UI_TEXT = {
     step: 'Question',
     of: 'of',
     matchedTitle: 'Directly Matched Schemes',
+    topMatchesTitle: 'Top matches for you',
+    topMatchesHint: 'Start with these 5 schemes. More matches are available below.',
+    showOtherMatches: (n) => `Show ${n} other matching scheme${n === 1 ? '' : 's'}`,
+    hideOtherMatches: 'Hide other schemes',
     needsInfoTitle: 'Schemes Requiring Office Verification / Additional Details',
     repeatBtn: 'Repeat Question',
     skipBtn: 'Skip',
@@ -67,6 +72,9 @@ const UI_TEXT = {
     hideDetails: 'Hide Details',
     resultsCount: (n) => `${n} scheme${n === 1 ? '' : 's'} found`,
     noResults: 'No scheme matches these choices. Try removing a filter or searching with a simpler word.',
+    otherCategoryPrompt: 'Type your category, for example street vendor, artisan, domestic worker, or fisher.',
+    otherCategoryPlaceholder: 'Type your category',
+    continueBtn: 'Continue',
   },
   hi: {
     badge: '🏛 केंद्र एवं राज्य सरकारी कल्याणकारी योजनाएं',
@@ -157,7 +165,7 @@ const PROFILE_KEY = {
   gender: 'gender',
   age: 'age',
   bank_account: 'has_bank_account',
-  bpl_card: 'is_bpl_or_low_income',
+  bpl_card: 'has_ration_card',
 };
 
 const SHORT_NAMES = {
@@ -254,6 +262,8 @@ const WIZARD_QUESTIONS = [
   },
 ];
 
+WIZARD_QUESTIONS[0].options.unshift({ label: 'Other category (type your work)', value: 'other' });
+
 export default function Schemes() {
   const { language } = useSession();
   const lang = language === 'hi' || language === 'ta' ? language : 'en';
@@ -264,9 +274,11 @@ export default function Schemes() {
   const [activeTab, setActiveTab] = useState('wizard'); // wizard | browse
   const [stepIndex, setStepIndex] = useState(0);
   const [profile, setProfile] = useState({});
+  const [customCategory, setCustomCategory] = useState('');
   const [phase, setPhase] = useState('question'); // question | results | loading
   const [matchedSchemes, setMatchedSchemes] = useState([]);
   const [needsInfoSchemes, setNeedsInfoSchemes] = useState([]);
+  const [showOtherMatches, setShowOtherMatches] = useState(false);
   const [groups, setGroups] = useState([]);
   const [selectedGroup, setSelectedGroup] = useState(null);
   const [browseSchemes, setBrowseSchemes] = useState([]);
@@ -363,6 +375,7 @@ export default function Schemes() {
         const res = await matchSchemes(finalProfile, lang);
         setMatchedSchemes(res.matched_schemes || []);
         setNeedsInfoSchemes(res.needs_more_info_schemes || []);
+        setShowOtherMatches(false);
         setPhase('results');
         playSuccessChime();
         if (res.explanation_audio_text) {
@@ -397,6 +410,10 @@ export default function Schemes() {
     stopSpeaking();
     const updated = { ...profile };
     delete updated[PROFILE_KEY[WIZARD_QUESTIONS[stepIndex].id]];
+    if (WIZARD_QUESTIONS[stepIndex].id === 'occupation') {
+      delete updated.category;
+      setCustomCategory('');
+    }
     setProfile(updated);
     advance(updated);
   };
@@ -404,6 +421,10 @@ export default function Schemes() {
   const editAnswer = (idx) => {
     stopSpeaking();
     setReturnToResults(true);
+    if (WIZARD_QUESTIONS[idx].id === 'occupation' && isCustomOccupation(profile.occupation)) {
+      setCustomCategory(profile.occupation);
+      setProfile((current) => ({ ...current, occupation: 'other', category: 'other' }));
+    }
     setStepIndex(idx);
     setPhase('question');
   };
@@ -428,7 +449,9 @@ export default function Schemes() {
       const lower = text.toLowerCase();
       let updated = { ...profile };
 
-      if (stepIndex === 0) {
+      if (stepIndex === 0 && (lower === 'laborer' || lower.includes('labor '))) {
+        updated.occupation = 'laborer';
+      } else if (stepIndex === 0) {
         if (lower.includes('farm') || lower.includes('kisan') || lower.includes('khet') || lower.includes('விவசாயி')) {
           updated.occupation = 'farmer';
         } else if (lower.includes('labour') || lower.includes('mazdoor') || lower.includes('coolie') || lower.includes('கூலி')) {
@@ -437,8 +460,17 @@ export default function Schemes() {
           updated.occupation = 'self_employed';
         } else if (lower.includes('student') || lower.includes('padhai') || lower.includes('छात्र') || lower.includes('மாணவர்')) {
           updated.occupation = 'student';
-        } else {
+        } else if (lower.includes('other category') || lower === 'other') {
+          updated.occupation = 'other';
+          updated.category = 'other';
+          setCustomCategory('');
+          setProfile(updated);
+          return;
+        } else if (lower.includes('unemployed') || lower.includes('no work') || lower.includes('homemaker')) {
           updated.occupation = 'unemployed';
+        } else {
+          updated.occupation = normalizeOtherCategory(text);
+          updated.category = 'other';
         }
       } else if (stepIndex === 1) {
         if (lower.includes('female') || lower.includes('woman') || lower.includes('mahila') || lower.includes('aurat') || lower.includes('பெண்')) {
@@ -465,9 +497,9 @@ export default function Schemes() {
         }
       } else if (stepIndex === 4) {
         if (lower.includes('yes') || lower.includes('haan') || lower.includes('aama') || lower.includes('ஆம்') || lower.includes('rashan') || lower.includes('bpl')) {
-          updated.is_bpl_or_low_income = true;
+          updated.has_ration_card = true;
         } else {
-          updated.is_bpl_or_low_income = false;
+          updated.has_ration_card = false;
         }
       }
 
@@ -483,12 +515,30 @@ export default function Schemes() {
     let updated = { ...profile };
     const qId = WIZARD_QUESTIONS[stepIndex].id;
 
-    if (qId === 'occupation') updated.occupation = val;
+    if (qId === 'occupation') {
+      updated.occupation = val;
+      if (val === 'other') {
+        updated.category = 'other';
+        setCustomCategory('');
+        setProfile(updated);
+        return;
+      }
+      delete updated.category;
+      setCustomCategory('');
+    }
     else if (qId === 'gender') updated.gender = val;
     else if (qId === 'age') updated.age = val;
     else if (qId === 'bank_account') updated.has_bank_account = val;
-    else if (qId === 'bpl_card') updated.is_bpl_or_low_income = val;
+    else if (qId === 'bpl_card') updated.has_ration_card = val;
 
+    setProfile(updated);
+    advance(updated);
+  };
+
+  const handleOtherCategorySubmit = () => {
+    const category = normalizeOtherCategory(customCategory);
+    if (!category) return;
+    const updated = { ...profile, occupation: category, category: 'other' };
     setProfile(updated);
     advance(updated);
   };
@@ -507,11 +557,15 @@ export default function Schemes() {
   const handleReset = () => {
     setReturnToResults(false);
     setProfile({});
+    setCustomCategory('');
     setStepIndex(0);
     setPhase('question');
     setMatchedSchemes([]);
     setNeedsInfoSchemes([]);
+    setShowOtherMatches(false);
   };
+
+  const { top: topMatchedSchemes, others: otherMatchedSchemes } = splitSchemeMatches(matchedSchemes);
 
   return (
     <div className="container" style={{ paddingBottom: 60, maxWidth: 960, margin: '0 auto' }}>
@@ -673,6 +727,34 @@ export default function Schemes() {
                   })}
                 </div>
 
+                {stepIndex === 0 && profile.occupation === 'other' && (
+                  <div style={{ marginTop: 18, padding: 16, background: '#eff6ff', border: '1.5px solid #93c5fd', borderRadius: 14, textAlign: 'left' }}>
+                    <label htmlFor="other-category" style={{ display: 'block', fontSize: 14, fontWeight: 800, color: '#1e3a8a', marginBottom: 8 }}>
+                      {t.otherCategoryPrompt || UI_TEXT.en.otherCategoryPrompt}
+                    </label>
+                    <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                      <input
+                        id="other-category"
+                        type="text"
+                        value={customCategory}
+                        onChange={(event) => setCustomCategory(event.target.value)}
+                        onKeyDown={(event) => event.key === 'Enter' && handleOtherCategorySubmit()}
+                        placeholder={t.otherCategoryPlaceholder || UI_TEXT.en.otherCategoryPlaceholder}
+                        style={{ flex: '1 1 260px', minWidth: 0, padding: '12px 14px', borderRadius: 10, border: '1.5px solid #93c5fd', fontSize: 15, color: '#0f172a', background: '#ffffff' }}
+                      />
+                      <button
+                        type="button"
+                        className="btn btn-primary"
+                        onClick={handleOtherCategorySubmit}
+                        disabled={!normalizeOtherCategory(customCategory)}
+                        style={{ borderRadius: 10, padding: '10px 18px' }}
+                      >
+                        {t.continueBtn || UI_TEXT.en.continueBtn}
+                      </button>
+                    </div>
+                  </div>
+                )}
+
                 {/* Controls */}
                 <div style={{ display: 'flex', gap: 12, justifyContent: 'center', marginTop: 24, flexWrap: 'wrap' }}>
                   <button
@@ -700,7 +782,8 @@ export default function Schemes() {
                   >
                     {t.skipBtn} →
                   </button>
-                  {profile[PROFILE_KEY[WIZARD_QUESTIONS[stepIndex].id]] !== undefined && (
+                  {profile[PROFILE_KEY[WIZARD_QUESTIONS[stepIndex].id]] !== undefined
+                    && !(WIZARD_QUESTIONS[stepIndex].id === 'occupation' && profile.occupation === 'other') && (
                     <button
                       type="button"
                       className="btn btn-ghost"
@@ -725,6 +808,11 @@ export default function Schemes() {
                   <div style={{ fontSize: 13, color: '#64748b', marginTop: 4 }}>
                     {t.voiceReaderGuide}
                   </div>
+                  {matchedSchemes.length > 5 && (
+                    <div style={{ fontSize: 13, color: '#0369a1', marginTop: 6, fontWeight: 700 }}>
+                      {t.topMatchesHint || UI_TEXT.en.topMatchesHint}
+                    </div>
+                  )}
                 </div>
                 <button
                   type="button"
@@ -770,9 +858,22 @@ export default function Schemes() {
                 })}
               </div>
 
-              {/* Directly Matched Cards */}
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 18, marginBottom: 36 }}>
-                {matchedSchemes.map((scheme) => (
+              {matchedSchemes.length === 0 && needsInfoSchemes.length === 0 && (
+                <div style={{ background: '#fff7ed', border: '1.5px solid #fed7aa', borderRadius: 14, padding: '16px 18px', marginBottom: 24, color: '#9a3412', fontWeight: 700 }}>
+                  {t.noSchemes}
+                </div>
+              )}
+
+              {/* Top five direct matches */}
+              {matchedSchemes.length > 0 && (
+                <div style={{ marginBottom: 24 }}>
+                  <h3 style={{ fontSize: 22, fontWeight: 800, margin: '0 0 14px', color: '#0f172a' }}>
+                    {t.topMatchesTitle || UI_TEXT.en.topMatchesTitle}
+                  </h3>
+                </div>
+              )}
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 18, marginBottom: 24 }}>
+                {topMatchedSchemes.map((scheme) => (
                   <SchemeDetailCard
                     key={scheme.scheme_id}
                     scheme={scheme}
@@ -785,6 +886,38 @@ export default function Schemes() {
                   />
                 ))}
               </div>
+
+              {otherMatchedSchemes.length > 0 && (
+                <div style={{ marginBottom: 36 }}>
+                  <button
+                    type="button"
+                    className="btn btn-ghost"
+                    aria-expanded={showOtherMatches}
+                    onClick={() => setShowOtherMatches((visible) => !visible)}
+                    style={{ width: '100%', justifyContent: 'center', padding: '12px 18px', borderRadius: 12, border: '1.5px solid #bae6fd', background: '#f0f9ff', color: '#0369a1', fontWeight: 800 }}
+                  >
+                    {showOtherMatches
+                      ? <><ChevronUp size={17} /> {t.hideOtherMatches || UI_TEXT.en.hideOtherMatches}</>
+                      : <><ChevronDown size={17} /> {(t.showOtherMatches || UI_TEXT.en.showOtherMatches)(otherMatchedSchemes.length)}</>}
+                  </button>
+                  {showOtherMatches && (
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 18, marginTop: 18 }}>
+                      {otherMatchedSchemes.map((scheme) => (
+                        <SchemeDetailCard
+                          key={scheme.scheme_id}
+                          scheme={scheme}
+                          lang={lang}
+                          t={t}
+                          isSpeaking={isSpeaking && speakingSchemeId === scheme.scheme_id}
+                          onSpeak={() => handleSpeakScheme(scheme)}
+                          isExpanded={expandedId === scheme.scheme_id}
+                          onToggleExpand={() => setExpandedId(expandedId === scheme.scheme_id ? null : scheme.scheme_id)}
+                        />
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
 
               {/* Schemes Requiring Office Verification */}
               {needsInfoSchemes.length > 0 && (

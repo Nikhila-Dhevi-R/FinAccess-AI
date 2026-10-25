@@ -53,6 +53,7 @@ KNOWN_FIELD_PATTERNS = [
     ("Village Name", r"village\s*name|\bvillage\b|gram\s*panchayat", "text"),
     ("Block / Tehsil", r"block|tehsil|taluk|mandal", "text"),
     ("City / Town", r"city\s*/?\s*town|\bcity\b|\btown\b", "text"),
+    ("State / District", r"state\s*/\s*district|district\s*/\s*state", "text"),
     ("District", r"\bdistrict\b|zilla", "text"),
     ("State", r"\bstate\b|state\s*/\s*ut", "text"),
     ("PIN / Postal Code", r"pin\s*code|postal\s*code|pincode|zip\s*code", "number"),
@@ -62,8 +63,16 @@ KNOWN_FIELD_PATTERNS = [
 
     # Socio-Economic
     ("Occupation", r"occupation|profession|employment|work", "text"),
-    ("Annual Family Income", r"annual\s*income|family\s*income|monthly\s*income|income\s*per\s*year", "number"),
+    ("Annual Family Income", r"annual\s*income|family\s*income|income\s*per\s*year", "number"),
     ("Caste / Social Category", r"caste|category|sc/st|obc|general\s*category", "text"),
+
+    # Common application and lending forms
+    ("Loan Type", r"loan\s*type", "text"),
+    ("Loan Amount Requested", r"loan\s*amount\s*requested|requested\s*loan\s*amount", "number"),
+    ("Loan Purpose", r"loan\s*purpose|purpose\s*of\s*loan", "text"),
+    ("Employer Name", r"employer\s*name|name\s*of\s*employer", "name"),
+    ("Job Title", r"job\s*title|job\s*designation|designation", "text"),
+    ("Monthly Income", r"monthly\s*income", "number"),
 
     # Banking
     ("Bank Account Number", r"bank\s*account\s*number|account\s*no|savings\s*a/c|a/c\s*no", "number"),
@@ -92,13 +101,13 @@ def extract_fields_with_coordinates_from_pdf(file_path: str) -> list[dict]:
     where the input answer should be stamped.
     """
     detected_fields = []
-    seen_labels = set()
 
     try:
         reader = pypdf.PdfReader(file_path)
         for page_idx, page in enumerate(reader.pages):
             page_num = page_idx + 1
             page_height = float(page.mediabox.height) if page.mediabox else 842.0
+            seen_labels = set()
 
             # Collect raw text fragments with positioning
             text_blocks = []
@@ -181,6 +190,10 @@ def extract_fields_from_image(file_path: str) -> list[dict]:
         from PIL import Image
         img = Image.open(file_path)
         img_w, img_h = img.size
+        tesseract_cmd = cheque_service._find_tesseract()
+        if not tesseract_cmd:
+            return []
+        pytesseract.pytesseract.tesseract_cmd = tesseract_cmd
 
         ocr_data = pytesseract.image_to_data(img, output_type=pytesseract.Output.DICT)
         n_boxes = len(ocr_data['text'])
@@ -256,7 +269,7 @@ def process_form_image(file_path: str, filename: str) -> dict:
         cheque_fields = cheque_service.detect_cheque_fields(file_path, is_pdf)
         if cheque_fields:
             fields_raw = cheque_fields
-    if not cheque_fields and (scanned or bank_form_service.looks_like_bank_form(file_path, filename, is_pdf)):
+    if not cheque_fields and scanned:
         form_fields = bank_form_service.detect_form_fields(file_path, is_pdf)
         if len(form_fields) >= 2:
             fields_raw = form_fields
